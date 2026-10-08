@@ -32,7 +32,12 @@ export type SourceStatus =
   | "failed"
   | "paused"
   | "archived";
-export type SourceOwnership = "owned" | "competitor" | "unclaimed";
+export type SourceOwnership =
+  | "owned"
+  | "official"
+  | "third_party"
+  | "uncertain"
+  | "irrelevant";
 export type VerificationStatus =
   | "unverified"
   | "verified_auto"
@@ -599,12 +604,16 @@ export interface Database {
           organization_id: string;
           source_id: string;
           raw_scrape_id: string | null;
+          ingestion_run_id: string | null;
+          external_id: string | null;
+          author_display_name: string | null;
           author_identifier: string;
           posted_at: string | null;
           content_text: string;
           rating: number | null;
           language_code: string | null;
           source_type: SourceType;
+          feedback_type: string | null;
           word_count: number;
           content_hash: string;
           sentiment_label: SentimentEnum | null;
@@ -613,6 +622,7 @@ export interface Database {
           intent: IntentEnum | null;
           key_entities: Json;
           language_quality: LanguageQualityEnum | null;
+          raw_payload: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -621,12 +631,16 @@ export interface Database {
           organization_id: string;
           source_id: string;
           raw_scrape_id?: string | null;
+          ingestion_run_id?: string | null;
+          external_id?: string | null;
+          author_display_name?: string | null;
           author_identifier: string;
           posted_at?: string | null;
           content_text: string;
           rating?: number | null;
           language_code?: string | null;
           source_type: SourceType;
+          feedback_type?: string | null;
           word_count?: number;
           content_hash: string;
           sentiment_label?: SentimentEnum | null;
@@ -635,6 +649,7 @@ export interface Database {
           intent?: IntentEnum | null;
           key_entities?: Json;
           language_quality?: LanguageQualityEnum | null;
+          raw_payload?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -643,12 +658,16 @@ export interface Database {
           organization_id?: string;
           source_id?: string;
           raw_scrape_id?: string | null;
+          ingestion_run_id?: string | null;
+          external_id?: string | null;
+          author_display_name?: string | null;
           author_identifier?: string;
           posted_at?: string | null;
           content_text?: string;
           rating?: number | null;
           language_code?: string | null;
           source_type?: SourceType;
+          feedback_type?: string | null;
           word_count?: number;
           content_hash?: string;
           sentiment_label?: SentimentEnum | null;
@@ -657,6 +676,7 @@ export interface Database {
           intent?: IntentEnum | null;
           key_entities?: Json;
           language_quality?: LanguageQualityEnum | null;
+          raw_payload?: Json | null;
           created_at?: string;
           updated_at?: string;
         };

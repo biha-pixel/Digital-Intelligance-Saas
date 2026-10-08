@@ -83,12 +83,15 @@ export abstract class BaseExtractor {
    * Builds a normalized ExtractedFeedback object.
    */
   protected buildFeedbackItem(params: {
+    externalId?: string;
     rawAuthorName?: string;
     rawAuthorUrl?: string;
     contentText: string;
     rating?: number;
     postedAt?: string;
     languageCode?: string;
+    feedbackType?: "review" | "comment" | "complaint" | "forum_post" | "cx_article";
+    rawPayload?: Record<string, unknown>;
     metadata?: Record<string, unknown>;
   }): ExtractedFeedback | null {
     const cleanText = this.sanitizeText(params.contentText);
@@ -108,14 +111,18 @@ export abstract class BaseExtractor {
     );
 
     return {
+      externalId: params.externalId,
+      authorDisplayName: params.rawAuthorName ? this.sanitizeText(params.rawAuthorName) : undefined,
       authorIdentifier,
       postedAt: params.postedAt,
       contentText: cleanText,
       rating: params.rating ? Math.max(1, Math.min(5, params.rating)) : undefined,
       languageCode: params.languageCode || "en",
       sourceType: this.sourceType,
+      feedbackType: params.feedbackType || "review",
       wordCount: this.countWords(cleanText),
       contentHash,
+      rawPayload: params.rawPayload,
       metadata: params.metadata || {},
     };
   }

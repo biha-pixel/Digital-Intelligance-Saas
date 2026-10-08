@@ -18,12 +18,22 @@ export class TrustpilotExtractor extends BaseExtractor {
     reviewCards.each((_, element) => {
       const card = $(element);
 
-      // Extract author raw name for SHA-256 pseudonymization (never stored in clear text)
+      // Extract external ID (platform-native review identifier)
+      const externalId =
+        card.attr("data-service-review-card-id") ||
+        card.attr("id") ||
+        card.find('a[href*="/reviews/"]').first().attr("href")?.split("/reviews/")?.[1]?.split("?")?.[0] ||
+        undefined;
+
+      // Extract author raw name for display and SHA-256 pseudonymization
       const rawAuthorName =
         card.find('[data-consumer-name-typography], [class*="consumer-information__name"], [class*="consumer-name"]')
           .first()
           .text()
           .trim() || undefined;
+
+      const authorProfileUrl =
+        card.find('a[href*="/users/"]').first().attr("href") || undefined;
 
       // Extract rating (1-5)
       let rating: number | undefined;
@@ -53,26 +63,51 @@ export class TrustpilotExtractor extends BaseExtractor {
         .text()
         .trim();
 
-      const fullText = reviewTitle ? `${reviewTitle}\n\n${reviewBody}` : reviewBody;
+      const fullText = reviewTitle && reviewBody
+        ? `${reviewTitle}\n\n${reviewBody}`
+        : reviewTitle || reviewBody;
 
       // Extract date posted
       let postedAt: string | undefined;
       const timeTag = card.find("time");
       if (timeTag.attr("datetime")) {
         try {
-          postedAt = new Date(timeTag.attr("datetime")!).toISOString();
+          const parsed = new Date(timeTag.attr("datetime")!);
+          if (!isNaN(parsed.getTime())) {
+            postedAt = parsed.toISOString();
+          }
         } catch {
           // Ignore invalid date strings
         }
       }
 
+      // If no datetime attribute, try time tag text or date string
+      if (!postedAt && timeTag.text().trim()) {
+        try {
+          const parsed = new Date(timeTag.text().trim());
+          if (!isNaN(parsed.getTime())) {
+            postedAt = parsed.toISOString();
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
       if (fullText) {
         const feedback = this.buildFeedbackItem({
+          externalId,
           rawAuthorName,
+          rawAuthorUrl: authorProfileUrl,
           contentText: fullText,
           rating,
           postedAt,
           languageCode: "en",
+          feedbackType: rating && rating <= 2 ? "complaint" : "review",
+          rawPayload: {
+            title: reviewTitle || undefined,
+            rawRating: altText || ratingImg.attr("data-service-review-rating") || undefined,
+            hasVerifiedBadge: card.find('[data-badge="verified"], [class*="verified-badge"]').length > 0,
+          },
           metadata: {
             sourceUrl: pageUrl,
             hasTitle: Boolean(reviewTitle),

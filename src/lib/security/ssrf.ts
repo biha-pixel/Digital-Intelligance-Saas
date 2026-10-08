@@ -2,6 +2,16 @@ import dns from "dns/promises";
 import net from "net";
 
 /**
+ * Maximum allowed URL length to prevent buffer exhaustion and ReDoS attacks (RFC 7230 / browser standard).
+ */
+export const MAX_URL_LENGTH = 2048;
+
+/**
+ * Maximum allowed redirects to prevent infinite redirect loops and resource starvation.
+ */
+export const MAX_REDIRECT_LIMIT = 5;
+
+/**
  * Checks whether an IPv4 address belongs to a private, loopback, link-local,
  * cloud metadata, or reserved subnet.
  */
@@ -66,12 +76,20 @@ export function isPrivateIPv6(ip: string): boolean {
   const normalized = ip.toLowerCase();
 
   // Loopback (::1) and Unspecified (::)
-  if (normalized === "::1" || normalized === "::" || normalized === "0000:0000:0000:0000:0000:0000:0000:0001") {
+  if (
+    normalized === "::1" ||
+    normalized === "::" ||
+    normalized === "0000:0000:0000:0000:0000:0000:0000:0001" ||
+    normalized === "0000:0000:0000:0000:0000:0000:0000:0000"
+  ) {
     return true;
   }
 
   // IPv4-mapped IPv6 (::ffff:x.x.x.x or ::ffff:xxxx:xxxx)
-  if (normalized.startsWith("::ffff:") || normalized.startsWith("0000:0000:0000:0000:0000:ffff:")) {
+  if (
+    normalized.startsWith("::ffff:") ||
+    normalized.startsWith("0000:0000:0000:0000:0000:ffff:")
+  ) {
     const ipv4Part = normalized.replace(/^.*ffff:/, "");
     if (net.isIPv4(ipv4Part)) {
       return isPrivateIPv4(ipv4Part);
@@ -100,7 +118,10 @@ export function isPrivateIPv6(ip: string): boolean {
   }
 
   // Documentation 2001:db8::/32
-  if (normalized.startsWith("2001:db8:") || normalized.startsWith("2001:0db8:")) {
+  if (
+    normalized.startsWith("2001:db8:") ||
+    normalized.startsWith("2001:0db8:")
+  ) {
     return true;
   }
 
@@ -138,16 +159,27 @@ export type SSRFValidationResult =
 /**
  * Strictly validates a URL to prevent Server-Side Request Forgery (SSRF) and DNS rebinding attacks.
  * Verifies:
- * 1. Protocol is http: or https:
- * 2. URL format contains no embedded credentials
- * 3. Hostname is not a local name or blacklisted domain
- * 4. Resolves DNS records and verifies that EVERY resolved IP address is a public, non-reserved address
+ * 1. URL length is within bounds (<= 2048 chars)
+ * 2. Protocol is strictly http: or https:
+ * 3. URL format contains no embedded credentials
+ * 4. Destination port is in the allowed scraping port list
+ * 5. Hostname is not a local name or blacklisted domain
+ * 6. Direct IP addresses are checked against private/reserved subnets
+ * 7. Resolves DNS records and verifies that EVERY resolved IP address is a public, non-reserved address
  */
 export async function validateUrlForScraping(
   urlString: string
 ): Promise<SSRFValidationResult> {
   if (!urlString || typeof urlString !== "string") {
     return { valid: false, error: "URL must be a non-empty string" };
+  }
+
+  // 1. Length enforcement
+  if (urlString.length > MAX_URL_LENGTH) {
+    return {
+      valid: false,
+      error: `URL length (${urlString.length}) exceeds maximum allowed length of ${MAX_URL_LENGTH} characters.`,
+    };
   }
 
   let parsed: URL;
@@ -157,7 +189,7 @@ export async function validateUrlForScraping(
     return { valid: false, error: "Invalid URL syntax" };
   }
 
-  // 1. Enforce strict protocol whitelist
+  // 2. Strict protocol whitelist (HTTP & HTTPS only)
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return {
       valid: false,
@@ -165,7 +197,7 @@ export async function validateUrlForScraping(
     };
   }
 
-  // 2. Reject credentials in URL (user:pass@host)
+  // 3. Reject credentials in URL (user:pass@host)
   if (parsed.username || parsed.password) {
     return {
       valid: false,
@@ -173,7 +205,7 @@ export async function validateUrlForScraping(
     };
   }
 
-  // 3. Reject ports commonly used for internal services (e.g. database ports, redis, ssh)
+  // 4. Reject ports commonly used for internal services (e.g. database ports, redis, ssh)
   if (parsed.port) {
     const port = parseInt(parsed.port, 10);
     const allowedStandardPorts = [80, 443, 8080, 8443];
@@ -186,23 +218,28 @@ export async function validateUrlForScraping(
   }
 
   const hostname = parsed.hostname.toLowerCase();
+  const cleanHostname = hostname.replace(/^\[|\]$/g, "");
 
-  // 4. Blacklist specific local hostnames
+  // 5. Blacklist specific local and cloud metadata hostnames
   const localHostnames = [
     "localhost",
     "localhost.localdomain",
     "ip6-localhost",
     "ip6-loopback",
     "metadata.google.internal",
+    "metadata.aws.internal",
+    "instance-data",
     "169.254.169.254",
+    "host.docker.internal",
+    "gateway.docker.internal",
   ];
 
   if (
-    localHostnames.includes(hostname) ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal") ||
-    hostname.endsWith(".onion")
+    localHostnames.includes(cleanHostname) ||
+    cleanHostname.endsWith(".localhost") ||
+    cleanHostname.endsWith(".local") ||
+    cleanHostname.endsWith(".internal") ||
+    cleanHostname.endsWith(".onion")
   ) {
     return {
       valid: false,
@@ -210,25 +247,25 @@ export async function validateUrlForScraping(
     };
   }
 
-  // 5. If hostname is already a direct IP address, validate directly
-  if (net.isIP(hostname)) {
-    if (isPrivateOrReservedIp(hostname)) {
+  // 6. If hostname is already a direct IP address, validate directly
+  if (net.isIP(cleanHostname)) {
+    if (isPrivateOrReservedIp(cleanHostname)) {
       return {
         valid: false,
         error: `IP address "${hostname}" belongs to a private, loopback, or reserved subnet.`,
-        resolvedIps: [hostname],
+        resolvedIps: [cleanHostname],
       };
     }
     return {
       valid: true,
-      resolvedIps: [hostname],
+      resolvedIps: [cleanHostname],
       normalizedUrl: parsed.toString(),
     };
   }
 
-  // 6. Perform DNS lookup for public hostname
+  // 7. Perform DNS lookup for public hostname to prevent DNS rebinding
   try {
-    const lookupResults = await dns.lookup(hostname, {
+    const lookupResults = await dns.lookup(cleanHostname, {
       all: true,
       verbatim: true,
     });
@@ -265,4 +302,50 @@ export async function validateUrlForScraping(
       }`,
     };
   }
+}
+
+/**
+ * Re-validates a redirect target against SSRF rules before following the redirect.
+ * Handles both relative and absolute redirect URLs and enforces maximum redirect limits.
+ */
+export async function validateRedirectTarget(
+  currentUrl: string,
+  redirectLocation: string,
+  redirectChain: string[] = [],
+  maxRedirects: number = MAX_REDIRECT_LIMIT
+): Promise<SSRFValidationResult & { targetUrl?: string }> {
+  if (redirectChain.length >= maxRedirects) {
+    return {
+      valid: false,
+      error: `Maximum redirect limit of ${maxRedirects} exceeded.`,
+    };
+  }
+
+  let resolvedTarget: string;
+  try {
+    // Resolve relative redirects against current URL
+    const resolved = new URL(redirectLocation, currentUrl);
+    resolvedTarget = resolved.toString();
+  } catch {
+    return {
+      valid: false,
+      error: `Invalid redirect location "${redirectLocation}".`,
+    };
+  }
+
+  // Re-run full SSRF validation on the target location
+  const ssrfResult = await validateUrlForScraping(resolvedTarget);
+  if (!ssrfResult.valid) {
+    return {
+      valid: false,
+      error: `Redirect to unsafe destination blocked: ${ssrfResult.error}`,
+    };
+  }
+
+  return {
+    valid: true,
+    normalizedUrl: ssrfResult.normalizedUrl,
+    resolvedIps: ssrfResult.resolvedIps,
+    targetUrl: ssrfResult.normalizedUrl,
+  };
 }

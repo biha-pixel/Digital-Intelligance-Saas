@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Acme Corp Reviews | Trustpilot</title>
+</head>
+<body>
+  <!-- Boilerplate to be removed -->
+  <nav class="navigation">
+    <a href="/categories">Categories</a>
+    <a href="/login">Log in</a>
+  </nav>
+  <div class="cookie-banner" id="cookie-notice">
+    <p>We use cookies to improve your experience.</p>
+  </div>
+  <div class="advertisement">
+    <p>Ad banner</p>
+  </div>
+
+  <main>
+    <section>
+      <!-- Review 1: Full review -->
+      <article data-service-review-id="tp_rev_1001" class="styles_reviewCard__1001">
+        <aside>
+          <a data-consumer-profile-link="true" href="/users/user_alpha_1">
+            <span data-consumer-name-typography="true">Alice Smith</span>
+          </a>
+        </aside>
+        <div data-service-review-rating="5">
+          <img src="/stars-5.svg" alt="Rated 5 out of 5 stars" />
+        </div>
+        <time datetime="2026-09-15T10:30:00.000Z">Sep 15, 2026</time>
+        <h2 data-service-review-title-typography="true">Exceptional customer support and fast resolution</h2>
+        <p data-service-review-text-typography="true">
+          I had an issue with my subscription billing and the support agent resolved it within 10 minutes. Super friendly and professional!
+        </p>
+      </article>
+
+      <!-- Review 2: Low rating / complaint without explicit title -->
+      <article data-service-review-id="tp_rev_1002" class="styles_reviewCard__1002">
+        <aside>
+          <a data-consumer-profile-link="true" href="/users/user_beta_2">
+            <span data-consumer-name-typography="true">Bob Jones</span>
+          </a>
+        </aside>
+        <div data-service-review-rating="1">
+          <img src="/stars-1.svg" alt="Rated 1 out of 5 stars" />
+        </div>
+        <time datetime="2026-09-16T14:15:00.000Z">Sep 16, 2026</time>
+        <p data-service-review-text-typography="true">
+          Terrible onboarding experience. The software crashed twice and customer support took 4 days to respond. Disappointed.
+        </p>
+      </article>
+
+      <!-- Review 3: Missing author name fallback -->
+      <article data-service-review-id="tp_rev_1003" class="styles_reviewCard__1003">
+        <div data-service-review-rating="4">
+          <img src="/stars-4.svg" alt="Rated 4 out of 5 stars" />
+        </div>
+        <time datetime="2026-09-17T08:00:00.000Z">Sep 17, 2026</time>
+        <p data-service-review-text-typography="true">
+          Solid platform with great analytics features. A few UI quirks here and there, but overall very satisfied with our team rollout.
+        </p>
+      </article>
+
+      <!-- Review 4: Exact duplicate of Review 1 to test in-batch deduplication -->
+      <article data-service-review-id="tp_rev_1001" class="styles_reviewCard__1001">
+        <aside>
+          <a data-consumer-profile-link="true" href="/users/user_alpha_1">
+            <span data-consumer-name-typography="true">Alice Smith</span>
+          </a>
+        </aside>
+        <div data-service-review-rating="5">
+          <img src="/stars-5.svg" alt="Rated 5 out of 5 stars" />
+        </div>
+        <time datetime="2026-09-15T10:30:00.000Z">Sep 15, 2026</time>
+        <h2 data-service-review-title-typography="true">Exceptional customer support and fast resolution</h2>
+        <p data-service-review-text-typography="true">
+          I had an issue with my subscription billing and the support agent resolved it within 10 minutes. Super friendly and professional!
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Trustpilot. All rights reserved.</p>
+  </footer>
+</body>
+</html>
