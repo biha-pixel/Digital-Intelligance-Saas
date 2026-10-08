@@ -79,103 +79,66 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 3: AI Analysis Pipeline 🔲
-**Goal**: Integrate OmniRoute and build analysis features.
+## Phase 3: Core Relational Database Schema & Strict RLS ✅ (Completed - 2026-10-08)
+**Goal**: Design and deploy relational multi-tenant PostgreSQL schema with Supabase and row-level security.
 
 ### Deliverables
-- [ ] OmniRoute client integration
-- [ ] AI provider abstraction
-- [ ] Sentiment analysis feature
-- [ ] Topic extraction feature
-- [ ] Summary generation feature
-- [ ] Schema validation for AI outputs
-- [ ] Analysis results storage
-- [ ] Error handling and retries
-- [ ] Cost tracking
-- [ ] AI feature tests
-
-### Learning Goals
-- AI provider abstraction patterns
-- Prompt engineering
-- Schema validation for AI outputs
-- Cost management
-- Error handling for AI services
-
-### Prerequisites
-- Phase 2 complete
-- OmniRoute API key
-- Analysis schemas defined
+- [x] Complete relational schema (16 tables: profiles, organizations, organization_members, company_profiles, company_aliases, company_domains, company_locations, company_social_accounts, sources, source_discoveries, source_verifications, monitoring_targets, feedback_items, feedback_analyses, ingestion_runs, audit_logs)
+- [x] Strict Row Level Security (RLS) policies guaranteeing tenant isolation
+- [x] Security Definer helper functions (`get_user_org_ids()`, `user_has_org_role()`)
+- [x] Strongly-typed TypeScript database definitions (`src/types/database.types.ts`)
+- [x] Comprehensive database isolation test suite verifying cross-tenant access prevention
 
 ---
 
-## Phase 4: Dashboard & Visualization 🔲
-**Goal**: Build the user-facing dashboard for insights.
+## Phase 4: Multi-Tenant Auth & Server-Side RBAC Authorization ✅ (Completed - 2026-10-08)
+**Goal**: Implement enterprise-grade multi-tenant authentication, session handling, and role-based access control.
 
 ### Deliverables
-- [ ] Dashboard layout
-- [ ] Project management UI
-- [ ] Data source management
-- [ ] Analysis results display
-- [ ] Filtering and search
-- [ ] Data visualization (charts, graphs)
-- [ ] Responsive design
-- [ ] Accessibility compliance
-- [ ] Loading and error states
-- [ ] Component tests
-
-### Learning Goals
-- Server Components vs Client Components
-- Data visualization with React
-- Accessibility (WCAG AA)
-- Responsive design with Tailwind
-- State management patterns
-
-### Prerequisites
-- Phase 3 complete
-- shadcn/ui configured
-- Design mockups (optional)
+- [x] Full authentication flows (Signup, Signin, Signout, session verification, active cookies)
+- [x] Protected route middleware and server-side RBAC wrappers (`getCurrentUser`, `getCurrentOrg`, `requireOrgAccess`)
+- [x] Role hierarchy enforcement (`owner` > `admin` > `analyst` > `viewer`)
+- [x] Automatic organization creation on signup and organization switcher API (`/api/organizations/switch`)
+- [x] Comprehensive authentication and RBAC security test suite
 
 ---
 
-## Phase 5: Integrations & Webhooks 🔲
-**Goal**: Add external service integrations and webhook processing.
+## Phase 5: Professional B2B SaaS Interface & Company Onboarding ✅ (Completed - 2026-10-08)
+**Goal**: Build an enterprise B2B SaaS interface with multi-step company onboarding and complete section pages.
 
 ### Deliverables
-- [ ] Connector abstraction pattern
-- [ ] Email notifications
-- [ ] Webhook endpoints
-- [ ] Webhook signature verification
-- [ ] Idempotent webhook processing
-- [ ] API key management per tenant
-- [ ] Integration tests
-
-### Learning Goals
-- Connector/adapter pattern
-- Webhook security (signatures)
-- Idempotency patterns
-- API key management
-- Integration testing
-
-### Prerequisites
-- Phase 4 complete
-- External service accounts
+- [x] Interactive 4-step Company Onboarding Wizard (`/onboarding`) with real-time completeness scoring (0-100%)
+- [x] Contextual strategic field guidance tooltips explaining why each metadata attribute is required
+- [x] Reusable accessible UI form primitives (`Input`, `Textarea`, `Select`, `TagInput`, `Skeleton`, `Alert`)
+- [x] Full dashboard section suite (`/dashboard`, `/sources`, `/monitoring`, `/feedback`, `/insights`, `/alerts`, `/reports`, `/settings`, `/profile`)
+- [x] Server Action (`saveCompanyProfile`) for transactional multi-table persistence
+- [x] Comprehensive onboarding validation and E2E unit test suite
 
 ---
 
-## Phase 6: Production Hardening 🔲
-**Goal**: Prepare for production deployment.
+## Phase 6: Core Company Discovery Engine & False Positive Defense ✅ (Completed - 2026-10-08)
+**Goal**: Build vendor-agnostic company discovery engine, multi-intent query generation, and candidate resolution pipeline.
 
 ### Deliverables
-- [ ] Production security audit
-- [ ] Performance optimization
-- [ ] Error tracking (Sentry)
-- [ ] Monitoring and alerting
-- [ ] Production deployment pipeline
-- [ ] Rollback procedure
-- [ ] Documentation complete
-- [ ] Load testing
-- [ ] Penetration testing basics
-- [ ] Production readiness review
+- [x] Vendor-agnostic `SearchProvider` abstraction (`MockSearchProvider`, `SerperSearchProvider`)
+- [x] Multi-intent query generator based on company profile (domain, aliases, locations, industry, social)
+- [x] URL canonicalization and source classification (stripping UTM, scheme normalization, domain resolution)
+- [x] Explainable multi-factor confidence scoring & entity resolution (location & domain disambiguation)
+- [x] Discovery service with tenant-isolated `source_discoveries` provenance persistence
+- [x] Internal Discovery Testing Lab UI at `/dashboard/admin/discovery`
+- [x] Comprehensive Vitest test suite for discovery algorithms, false-positive prevention, and deduplication
+
+---
+
+## Phase 7: Deep Review Ingestion & Platform Crawling Pipeline 🔲
+**Goal**: Connect candidate sources to Crawl4AI workers for scheduled, continuous review ingestion.
+
+### Deliverables
+- [ ] Source approval workflow transitioning candidate sources to active `monitoring_targets`
+- [ ] Platform-specific crawl job dispatcher with rate limiting and backoff
+- [ ] Continuous pagination and incremental review sync
+- [ ] Full review normalizer pipeline (mapping Trustpilot, Google Maps, G2, Capterra, Reddit to `feedback_items`)
+- [ ] Audit logs and run metrics tracking in `ingestion_runs`
 
 ### Learning Goals
 - Production security practices

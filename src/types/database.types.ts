@@ -99,6 +99,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       organizations: {
         Row: {
@@ -131,6 +132,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       organization_members: {
         Row: {
@@ -154,6 +156,7 @@ export interface Database {
           role?: UserRole;
           created_at?: string;
         };
+        Relationships: [];
       };
       company_profiles: {
         Row: {
@@ -201,6 +204,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       company_aliases: {
         Row: {
@@ -227,6 +231,7 @@ export interface Database {
           is_primary_brand?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
       company_domains: {
         Row: {
@@ -253,6 +258,7 @@ export interface Database {
           is_primary?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
       company_locations: {
         Row: {
@@ -300,6 +306,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       company_social_accounts: {
         Row: {
@@ -329,6 +336,7 @@ export interface Database {
           profile_url?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       sources: {
         Row: {
@@ -376,6 +384,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       source_discoveries: {
         Row: {
@@ -414,6 +423,7 @@ export interface Database {
           metadata?: Json;
           created_at?: string;
         };
+        Relationships: [];
       };
       source_verifications: {
         Row: {
@@ -446,6 +456,7 @@ export interface Database {
           notes?: string | null;
           verified_at?: string;
         };
+        Relationships: [];
       };
       monitoring_targets: {
         Row: {
@@ -487,6 +498,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       ingestion_runs: {
         Row: {
@@ -540,6 +552,7 @@ export interface Database {
           started_at?: string;
           completed_at?: string | null;
         };
+        Relationships: [];
       };
       raw_scrapes: {
         Row: {
@@ -578,6 +591,7 @@ export interface Database {
           metadata?: Json;
           fetched_at?: string;
         };
+        Relationships: [];
       };
       feedback_items: {
         Row: {
@@ -646,6 +660,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       feedback_analyses: {
         Row: {
@@ -696,6 +711,7 @@ export interface Database {
           raw_response?: Json | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       audit_logs: {
         Row: {
@@ -734,6 +750,7 @@ export interface Database {
           user_agent?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       job_queue: {
         Row: {
@@ -781,7 +798,11 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
     };
     Functions: {
       get_user_org_ids: {
@@ -806,6 +827,23 @@ export interface Database {
           max_attempts: number;
         }[];
       };
+    };
+    Enums: {
+      user_role: UserRole;
+      plan_tier: PlanTier;
+      source_type: SourceType;
+      source_status: SourceStatus;
+      source_ownership: SourceOwnership;
+      verification_status: VerificationStatus;
+      monitoring_status: MonitoringStatus;
+      ingestion_status: IngestionStatus;
+      job_status: JobStatus;
+      sentiment_enum: SentimentEnum;
+      intent_enum: IntentEnum;
+      language_quality_enum: LanguageQualityEnum;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

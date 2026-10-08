@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { ACTIVE_ORG_COOKIE } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  // Check if we have a session
+  // 1. Check if user is authenticated and sign out from Supabase Auth
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -12,6 +14,10 @@ export async function POST(request: NextRequest) {
   if (user) {
     await supabase.auth.signOut();
   }
+
+  // 2. Clear tenant active organization session cookie
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_ORG_COOKIE);
 
   const { origin } = new URL(request.url);
   return NextResponse.redirect(`${origin}/login`, {
@@ -29,6 +35,9 @@ export async function GET(request: NextRequest) {
   if (user) {
     await supabase.auth.signOut();
   }
+
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_ORG_COOKIE);
 
   const { origin } = new URL(request.url);
   return NextResponse.redirect(`${origin}/login`, {
