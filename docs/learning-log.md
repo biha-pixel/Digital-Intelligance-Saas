@@ -165,6 +165,71 @@ Without a robust Discovery Engine, users would have to manually find and paste t
 
 ---
 
+## 2026-10-08: Phase 7 — Source Registry & Ownership Verification
+
+**What I learned**:
+1. **Source Verification & Identity**:
+   - Web footprints (review listings, social profiles, directories) cannot be trusted purely because they contain a company's name. A *source identity* links a digital platform entity to a registered company profile using verified evidence.
+2. **Ownership Taxonomy**:
+   - `owned`: Directly controlled by the business (e.g., official website, official blog, verified Twitter/LinkedIn).
+   - `official`: External platforms maintained by the company with official status (e.g., company's verified App Store listing or official Yelp business account).
+   - `third-party`: Independent platforms hosting customer reviews, discussions, or commentary (e.g., Trustpilot, G2, Reddit, Capterra).
+   - `uncertain`: Potential candidate requiring human review or additional verification evidence.
+   - `irrelevant`: False positive or competitor profile with conflicting signals (e.g., mismatched location or distinct registered domain).
+3. **Canonical URLs & Provenance**:
+   - Normalizing URLs (stripping query parameters, trailing slashes, URL schemes, and standardizing hostnames) prevents duplicate scraping and duplicate feedback items.
+   - *Provenance* maintains an audit trail of how a source was discovered, which search query or user action surfaced it, and all historical verification evidence.
+4. **False-Positive Prevention via Multi-Signal Evidence**:
+   - Cross-referencing geographic coordinates/addresses, domain links in profiles, official contact metadata, and name similarity protects against attributing competitor or namesake review pages to the user's company.
+
+---
+
+## 2026-10-08: Phase 8 — Self-Hosted Crawl4AI Integration & Multi-Layer SSRF Defenses
+
+**What I learned**:
+1. **Architectural Decoupling**:
+   - `Application → ScrapingProvider → Crawl4AIProvider → Crawl4AI Server`: Decoupling via TypeScript interfaces ensures core business logic and pipelines are never hardcoded to Crawl4AI-specific API signatures, allowing swapping mock or alternate engines without touching application services.
+2. **HTTP API, REST & Request-Response Lifecycles**:
+   - REST over HTTP provides a stateless protocol with standard status codes (`200 OK`, `429 Too Many Requests`, `502/503/504 Bad Gateway / Unavailable`).
+   - Using `AbortController` and signals enforces deterministic timeouts, ensuring hung connections never starve the Node.js event loop or worker pools.
+3. **Resilience Engineering (Exponential Backoff with Jitter)**:
+   - Transient failures (429 rate limits, 502/503/504 gateway drops, connection timeouts) are retried using $delay = base \times 2^{attempt} + jitter$. Permanent failures (400, 401, 403, 404, SSRF blocks) fail fast without retrying.
+4. **Docker Network Communication**:
+   - In containerized environments, `localhost` refers only to the container's loopback interface. Inter-service networking requires service hostnames (e.g., `http://crawl4ai:11235` on internal bridge networks).
+5. **Multi-Layer SSRF & DNS Rebinding Defenses**:
+   - Validating URLs before outbound requests blocks loopback (`127.0.0.0/8`, `::1`), RFC 1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), link-local/cloud metadata (`169.254.169.254`), non-HTTP(S) protocols (`file:`, `gopher:`, `ftp:`), and abnormal ports.
+   - Performing DNS pre-resolution verifies that all resolved IP addresses are public, defending against DNS rebinding attacks.
+   - Redirect chains are capped (max 5 hops) with full SSRF re-validation at every hop.
+6. **Payload Bounds & Deduplication**:
+   - Maximum URL lengths (2048 chars) and response body size limits (10 MB) prevent memory exhaustion and DoS attacks.
+   - SHA-256 content hashing creates deterministic fingerprints for raw HTML and extracted feedback deduplication.
+
+---
+
+## 2026-10-08: Phase 9 — Deep Review Ingestion, Normalization & Idempotent Extraction Pipeline
+
+**What I learned**:
+1. **Extraction & Canonical Data Modeling**:
+   - Extracting structured data from raw HTML requires transforming platform-specific shapes (like a Yelp `.review__09f24__card` vs a Google Maps `.jftiEf`) into a unified *Canonical Data Model* (`NormalizedFeedbackItem`).
+   - Normalization applies standardization across varying inputs, unifying dates ("2 weeks ago" vs "Sep 20, 2026" to ISO-8601), standardizing float rating scales (1 to 5), and aggressively cleaning boilerplate/HTML.
+2. **Strategy Pattern for Hot-Swappable Extractors**:
+   - Defining a `BaseExtractor` interface allows specific implementations (`YelpExtractor`, `GoogleMapsExtractor`, `TrustpilotExtractor`) to encapsulate scraping selectors internally, while the `ExtractorRegistry` manages dispatch dynamically at runtime based on the `source_type`.
+3. **Zero-PII Pseudonymization & Lineage**:
+   - Hashing user identifiers (`SHA-256(sourceType + ":" + salt + ":" + authorName)`) effectively groups reviews from the same individual without committing any raw Personally Identifiable Information (PII) in plaintext to the database.
+   - Preserving the `external_id` (the platform-native ID) is essential for lineage tracking, letting the pipeline correlate reviews and track state changes over time.
+4. **Two-Tier Deduplication & Idempotent Extraction**:
+   - *Tier 1 (In-Batch)*: Memory-buffered checks using an ES6 `Set` to prevent inserting duplicate review cards pulled from the same DOM page.
+   - *Tier 2 (PostgreSQL Cross-Crawl)*: Looking up the newly extracted `content_hash` and `external_id` against the database to guarantee idempotent, side-effect-free repeated crawls. If an `external_id` matches but its `content_hash` changed, the pipeline intelligently registers it as a revised/updated review (`metrics.updatedCount`) rather than a hard failure or a blind duplicate.
+
+**Why it matters**: A high-throughput feedback ingestion engine operates on unstructured, uncooperative external DOMs. Missing an isolation layer between crawling and database storage guarantees data corruption, unmanageable schema mutations over time, and duplicate record explosion on subsequent sweeps. The combination of uniform canonical modeling and multi-tier deduplication acts as a firewall between external platform entropy and downstream AI analytical purity.
+
+**How to apply**:
+- Decouple the DOM-parsing selectors inside concrete Strategies inherited from a standard `BaseExtractor`.
+- Hash user identifiers early in the pipeline (`computeContentHash`).
+- Implement the "Extract → Normalize → Buffer Dedupe → DB Cross-Check Dedupe" pipeline explicitly to ensure true idempotency.
+
+---
+
 ## Template for Future Entries
 
 ```markdown

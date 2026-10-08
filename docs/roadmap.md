@@ -130,22 +130,50 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 7: Deep Review Ingestion & Platform Crawling Pipeline 🔲
-**Goal**: Connect candidate sources to Crawl4AI workers for scheduled, continuous review ingestion.
+## Phase 7: Source Registry & Ownership Verification ✅ (Completed - 2026-10-08)
+**Goal**: Build the Source Registry with evidence-based verification, ownership classification, and duplicate detection.
 
 ### Deliverables
-- [ ] Source approval workflow transitioning candidate sources to active `monitoring_targets`
-- [ ] Platform-specific crawl job dispatcher with rate limiting and backoff
-- [ ] Continuous pagination and incremental review sync
-- [ ] Full review normalizer pipeline (mapping Trustpilot, Google Maps, G2, Capterra, Reddit to `feedback_items`)
-- [ ] Audit logs and run metrics tracking in `ingestion_runs`
+- [x] Multi-source ownership classification (`owned`, `official`, `third-party`, `uncertain`, `irrelevant`)
+- [x] Evidence-based verification engine (domain matching, location cross-referencing, metadata checks, confidence scoring)
+- [x] Canonical URL resolution and duplicate candidate detection
+- [x] Source Registry UI (`/dashboard/sources`) with filtering, manual review actions, and verification status badges
+- [x] Database migrations and RLS policies for source ownership and provenance tracking
+- [x] Comprehensive test suite covering false positives, duplicate URLs, redirects, and social candidate matching
+
+---
+
+## Phase 8: Self-Hosted Crawl4AI Provider & SSRF Defense Integration ✅ (Completed - 2026-10-08)
+**Goal**: Integrate self-hosted Crawl4AI server with clean provider abstractions and multi-layer SSRF defenses.
+
+### Deliverables
+- [x] Decoupled architecture (`Application → ScrapingProvider → Crawl4AIProvider → Crawl4AI`)
+- [x] `Crawl4AIProvider` implementation supporting `healthCheck`, single-page `fetch`, and concurrent `crawl`
+- [x] Multi-layer SSRF defense (RFC 1918, IPv6 ULA, loopback, cloud metadata `169.254.169.254`, DNS rebinding defense)
+- [x] Resilient HTTP client with `AbortController` timeouts, exponential backoff with randomized jitter, and typed error hierarchy
+- [x] Redirect chain safety with per-hop re-validation and max hop limit (5 hops)
+- [x] Content safety: response size limits (10MB), URL length limits (2048 chars), deterministic SHA-256 deduplication hashing
+- [x] Unit and mock integration test suites for `Crawl4AIProvider` and SSRF validation
+
+---
+
+## Phase 9: Deep Review Ingestion, Normalization & Idempotent Extraction Pipeline ✅ (Completed - 2026-10-08)
+**Goal**: Build a rigorous extraction layer to transform raw web content into normalized, deduplicated feedback items ready for analytical storage.
+
+### Deliverables
+- [x] Canonical Data Model (`NormalizedFeedbackItem`) representing uniformly typed feedback across any platform or origin
+- [x] Strategy Pattern for Extractor Engines (`BaseExtractor`, `ExtractorRegistry`, and source-specific implementations for Yelp, Maps, Reddit, etc.)
+- [x] Zero-PII Pseudonymization (`SHA-256` salted author hashing) and strict boilerplate text cleaning
+- [x] Two-Tier Deduplication (In-Batch memory buffering and Cross-Crawl SQL checks via `content_hash`)
+- [x] Revision and lineage tracking utilizing native external IDs to detect modified feedback on subsequent sweeps
+- [x] Comprehensive test suite with deterministic HTML fixtures evaluating duplicates, malformed pages, and missing authors/dates
 
 ### Learning Goals
-- Production security practices
-- Performance optimization
-- Monitoring and observability
-- Incident response
-- Production deployment
+- Canonical Data Modeling
+- Software Design Patterns (Strategy)
+- Idempotency & Data Pipelines
+- Zero-PII compliance and hashing
+- DOM abstraction with strict boundary isolation
 
 ### Prerequisites
 - All previous phases complete
@@ -154,7 +182,8 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 7: Mobile App (Future) 🔲
+## Phase 10: AI Insights & OmniRoute Intelligent Normalization 🔲
+**Goal**: Connect the extraction pipeline to AI services to automatically structure unstructured feedback (e.g. general articles) and extract themes/sentiment.
 **Goal**: Build companion mobile app with Expo/React Native.
 
 ### Deliverables
