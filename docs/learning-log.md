@@ -26,6 +26,39 @@ Track what you learn during development. Each entry should explain what you lear
 
 ---
 
+## 2026-10-07: Phase 1 — Multi-Tenant Architecture & Supabase SSR Auth
+
+**What I learned**: 
+1. Multi-tenant isolation at the database layer using PostgreSQL Row Level Security (RLS) is far superior to application-level `where organization_id = ...` filtering because database-level policies prevent data leakage even if application code has bugs.
+2. Writing a `SECURITY DEFINER` function (`get_user_org_ids()`) avoids recursive policy queries and improves RLS evaluation performance.
+3. Next.js 16 App Router SSR auth requires asynchronous cookie handling (`await cookies()`) and proper cookie proxy/middleware refresh to keep session tokens in sync without blocking edge or server execution.
+
+**Why it matters**: A breach of tenant boundaries is a fatal flaw for any B2B SaaS. RLS guarantees that tenant data remains strictly segregated across all queries.
+
+**How to apply**:
+- Always enable RLS on every table (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`).
+- Use `organization_id IN (SELECT get_user_org_ids(auth.uid()))` as the standard policy predicate.
+- Isolate service-role operations (like background scrapers and queue workers) in `@/lib/supabase/admin.ts`.
+
+---
+
+## 2026-10-07: Phase 2 — SSRF Defense, Ethical Crawling & Concurrency-Safe Queues
+
+**What I learned**:
+1. SSRF prevention requires multi-tier validation: validating protocols (`http:`, `https:`), stripping embedded credentials, blocking non-standard ports, and resolving hostnames through DNS before verifying that resolved IP addresses do not touch private subnets (RFC 1918), loopback, link-local, or cloud metadata endpoints (`169.254.169.254`).
+2. Ethical scraping requires RFC 9309 `robots.txt` compliance, honoring `Crawl-delay`, and implementing token-bucket rate limiters per domain.
+3. User privacy is preserved by applying one-way cryptographic pseudonymization (`SHA-256(sourceType + ":" + name + ":" + profileUrl)`) so that no author PII is ever stored in cleartext.
+4. Database-backed job queues can run concurrently without race conditions or deadlocks using PostgreSQL's `SELECT ... FOR UPDATE SKIP LOCKED`.
+
+**Why it matters**: SaaS scrapers can easily be abused to probe internal clouds (SSRF) or violate website terms without robust defensive controls. Zero-PII ingestion ensures compliance with GDPR and privacy frameworks.
+
+**How to apply**:
+- Run `validateUrlForScraping(url)` before making any external HTTP request.
+- Use `claim_next_job` RPC for worker concurrency.
+- Store content hashes (`SHA-256`) to avoid duplicate ingestion runs.
+
+---
+
 ## Template for Future Entries
 
 ```markdown

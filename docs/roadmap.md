@@ -22,19 +22,19 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 1: Foundation 🔲
+## Phase 1: Foundation ✅ (Completed - 2026-10-07)
 **Goal**: Set up Next.js project with Supabase, authentication, and core schema.
 
 ### Deliverables
-- [ ] Next.js project initialization (TypeScript, Tailwind, shadcn/ui)
-- [ ] Supabase project setup
-- [ ] Authentication flow (sign up, sign in, sign out)
-- [ ] Core database schema (tenants, users, projects)
-- [ ] RLS policies for all tables
-- [ ] Environment variable configuration
-- [ ] Basic project layout and navigation
-- [ ] Unit tests for core functions
-- [ ] CI/CD pipeline (GitHub Actions)
+- [x] Next.js project initialization (TypeScript, Tailwind, shadcn/ui)
+- [x] Supabase project setup & client abstractions (SSR cookie-based auth)
+- [x] Authentication flow (sign up, sign in, sign out, callback route)
+- [x] Core database schema (organizations, organization_members, company_profiles, sources, feedback_items, job_queue)
+- [x] Strict RLS policies for all tables with `get_user_org_ids()` security definer
+- [x] Environment variable configuration (.env.example)
+- [x] Basic project layout, auth layout, and dashboard shell
+- [x] Unit tests for core functions (Vitest)
+- [x] TypeScript types and Zod validation schemas
 
 ### Learning Goals
 - Understand Next.js App Router and Server Components
@@ -50,19 +50,20 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 2: Scraping Infrastructure 🔲
+## Phase 2: Scraping Infrastructure ✅ (Completed - 2026-10-07)
 **Goal**: Integrate Crawl4AI and build scraping pipeline.
 
 ### Deliverables
-- [ ] Crawl4AI Docker setup
-- [ ] URL validation (SSRF prevention)
-- [ ] Scraping API endpoints
-- [ ] Job queue for scraping tasks
-- [ ] Scrape results storage
-- [ ] Rate limiting per domain
-- [ ] robots.txt checking
-- [ ] Retry logic with backoff
-- [ ] Scraping tests
+- [x] Crawl4AI Docker setup (docker-compose.yml)
+- [x] URL validation (SSRF prevention, DNS rebinding & private IP/metadata blocklist)
+- [x] Scraping API endpoints (`/api/scraping/trigger`, `/api/queue/process`)
+- [x] Job queue for scraping tasks (`claim_next_job` with `SELECT ... FOR UPDATE SKIP LOCKED`)
+- [x] Scrape results storage (raw HTML & zero-PII normalized `feedback_items`)
+- [x] Rate limiting per domain (token bucket with per-domain policies)
+- [x] robots.txt checking (RFC 9309 compliance with 24-hour cache)
+- [x] Retry logic with exponential backoff
+- [x] Platform extractors (Trustpilot, Google Maps, Yelp, Generic Website)
+- [x] Scraping unit test suite (SSRF, robots.txt, extractors)
 
 ### Learning Goals
 - Docker containerization
