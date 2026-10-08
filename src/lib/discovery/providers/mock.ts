@@ -3,6 +3,7 @@ import { SearchProvider, SearchQuery, SearchResult } from "../types";
 export class MockSearchProvider implements SearchProvider {
   name = "mock_search_provider";
   private customResults: Record<string, SearchResult[]> = {};
+  private defaultResults: SearchResult[] = [];
 
   constructor(customResults?: Record<string, SearchResult[]>) {
     if (customResults) {
@@ -11,8 +12,12 @@ export class MockSearchProvider implements SearchProvider {
   }
 
   // Pre-seed search results for testing
-  setMockResults(queryTerm: string, results: SearchResult[]) {
-    this.customResults[queryTerm.toLowerCase()] = results;
+  setMockResults(queryTermOrResults: string | SearchResult[], results?: SearchResult[]) {
+    if (Array.isArray(queryTermOrResults)) {
+      this.defaultResults = queryTermOrResults;
+    } else if (results) {
+      this.customResults[queryTermOrResults.toLowerCase()] = results;
+    }
   }
 
   async search(query: SearchQuery): Promise<SearchResult[]> {
@@ -21,6 +26,11 @@ export class MockSearchProvider implements SearchProvider {
     // Check if we have exact mocked results
     if (this.customResults[key]) {
       return this.customResults[key];
+    }
+
+    // Check if default mock results are provided
+    if (this.defaultResults.length > 0) {
+      return this.defaultResults;
     }
 
     // Otherwise, generate realistic fallback results based on common patterns

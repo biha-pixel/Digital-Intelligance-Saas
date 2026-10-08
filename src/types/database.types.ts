@@ -69,6 +69,8 @@ export type IntentEnum =
   | "feature_request"
   | "bug_report"
   | "question"
+  | "refund_request"
+  | "churn_threat"
   | "general_feedback";
 export type LanguageQualityEnum =
   | "high"

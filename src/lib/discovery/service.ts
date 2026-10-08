@@ -3,12 +3,25 @@ import { generateDiscoveryQueries } from "./queries";
 import { canonicalizeUrl, classifySourceType, evaluateCandidateConfidence, ProfileMatchingContext } from "./utils";
 import { MockSearchProvider } from "./providers/mock";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export class DiscoveryService {
   private searchProvider: SearchProvider;
+  private supabaseClient?: SupabaseClient;
 
-  constructor(searchProvider?: SearchProvider) {
+  constructor(searchProvider?: SearchProvider, supabaseClient?: SupabaseClient) {
     this.searchProvider = searchProvider || new MockSearchProvider();
+    this.supabaseClient = supabaseClient;
+  }
+
+  private async getClient() {
+    if (this.supabaseClient) return this.supabaseClient;
+    try {
+      return await createClient();
+    } catch {
+      return createAdminClient();
+    }
   }
 
   /**
@@ -86,7 +99,7 @@ export class DiscoveryService {
     candidates: CandidateSource[]
   ) {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
 
       const payload = candidates.map((c) => ({
         organization_id: orgId,

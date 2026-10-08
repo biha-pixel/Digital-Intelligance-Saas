@@ -228,6 +228,117 @@ Without a robust Discovery Engine, users would have to manually find and paste t
 - Hash user identifiers early in the pipeline (`computeContentHash`).
 - Implement the "Extract → Normalize → Buffer Dedupe → DB Cross-Check Dedupe" pipeline explicitly to ensure true idempotency.
 
+## 2026-10-08: Phase 10 — AI Infrastructure, OmniRoute Gateway Abstraction & Structured Zero-Trust Validation
+
+**What I learned**:
+1. **AI Gateway Architecture**:
+   - An AI Gateway (like OmniRoute) sits between client applications and downstream AI models (Anthropic, OpenAI, etc.). It standardizes authentication, request formatting, rate limits, multi-model routing, and unified telemetry, preventing vendor lock-in.
+2. **Provider Abstraction Pattern**:
+   - Defining a strict TypeScript contract (`AIProvider`) decouples application business logic from specific gateway HTTP clients. This enables hot-swapping the concrete `OmniRouteAdapter` with `MockAIProvider` for instant, offline, deterministic testing and zero-egress CI pipelines.
+3. **Model Routing Tiers**:
+   - Instead of hardcoding model names across features, workloads map to operational tiers:
+     - `fast` (`openai/gpt-4o-mini`): Rapid classification, keyword tagging, sentiment labeling (15s timeout).
+     - `standard` (`anthropic/claude-3-5-sonnet`): Customer feedback synthesis, multi-aspect thematic extraction (30s timeout).
+     - `reasoning` (`anthropic/claude-3-7-sonnet`): Deep root-cause inference, executive briefings, complex trend analysis (60s timeout).
+4. **API Request & Response Lifecycle**:
+   - Encapsulating requests (`AIRequest`, `StructuredAIRequest`) and responses (`AIResponse`, `StructuredAIResponse`) provides structured consistency: system prompts, message history, token usage telemetry (`promptTokens`, `completionTokens`, `totalTokens`), finish reasons, and estimated cost tracking.
+5. **Deterministic Timeouts with Abort Cancellation**:
+   - Per-tier timeout limits and `AbortController` cancellation signals prevent upstream gateway hangs from exhausting Node.js worker pools and blocking client requests.
+6. **Resilience Engineering (Exponential Backoff with Full Jitter)**:
+   - Transient failures (HTTP 408, 429, 500, 502, 503, 504) are retried with exponential backoff and randomized jitter: $delay = \min(maxDelay, baseDelay \times 2^{attempt} + \text{jitter})$. Deterministic errors (400, 401, 403, 422) fail fast without retrying.
+7. **Zero-Trust Structured Output & Schema Validation**:
+   - LLMs generate non-deterministic text. Structured pipelines mandate JSON output (`response_format: { type: "json_object" }`), strip potential markdown code fences (` ```json `), and validate against strict Zod schemas (`safeParse`). Missing fields or invalid enum variants immediately trigger path-indexed `AIValidationError` exceptions.
+8. **Prompt Versioning & Registry**:
+   - Prompt templates are defined with semantic version tags (e.g. `cx-sentiment@v1.2.0`), variable placeholders (`{{variable}}` and `{variable}`), and stored in an in-memory `PromptRegistry`. This allows auditability, A/B testing, and reproducible model behavior over time.
+9. **Model Metadata Catalog**:
+   - Centralizing context window limits, max output tokens, token pricing, and capability flags (`supportsStructuredOutput`, `supportsVision`) allows the runtime to dynamically optimize payload sizes and compute estimated invocation costs.
+
+**Why it matters**:
+Directly invoking proprietary LLM APIs without an abstraction layer leads to severe vendor lock-in, unhandled rate-limit crashes, runaway token costs, and catastrophic runtime bugs caused by malformed or hallucinated model outputs. Building a robust AI infrastructure layer with OmniRoute, strict Zod validation, and retry mechanics forms the resilient foundation required for high-throughput customer intelligence analytics.
+
+**How to apply**:
+- Direct all LLM calls through `getAIProvider()`.
+- Use `generateStructured()` with strict Zod schemas for all data extraction tasks.
+- Always use `MockAIProvider` in unit tests and CI workflows.
+- Store `OMNIROUTE_API_KEY` and `OMNIROUTE_BASE_URL` exclusively in server-side environment variables.
+
+---
+
+## 2026-10-08: Phase 11 — Feedback Analysis Engine & Automated AI Evaluation Framework
+
+**What I learned**:
+1. **Classification vs. Extraction vs. Structured Generation**:
+   - **Classification**: Assigning input text to a predefined, bounded taxonomy (e.g. `SentimentEnum`, `EmotionEnum`, `IntentEnum`, `SeverityEnum`). Can be single-label (one sentiment) or multi-label (multiple thematic tags).
+   - **Extraction**: Extracting specific raw entities or concise derived summaries directly grounded in the text (e.g. `complaintSummary`, `painPoints`, `topics`).
+   - **Structured Generation**: Directing an LLM to generate syntactically and semantically valid JSON strictly matching a Zod schema (`FeedbackAnalysisSchema`) using JSON mode and zero-trust schema parsing.
+2. **Confidence Calibration**:
+   - LLMs are prone to overconfidence when predicting sentiment or classification. True calibration means when a model claims 90% confidence, it is correct 90% of the time.
+   - We achieve calibration by requesting multi-dimensional confidence breakdown (`sentimentConfidence`, `intentConfidence`, `overallConfidence`) and defensively applying heuristic clamping: if an item is marked `isAmbiguous` or `isSpam`, overall confidence is automatically capped at $\le 0.65$.
+3. **Deterministic vs. Probabilistic Logic**:
+   - A robust AI system is a hybrid: deterministic code handles hard constraints, bounds checks, whitespace guards, and business rule enforcement, while probabilistic LLMs handle semantic nuance, tone, and empathy.
+   - *Invariant Defense*: If the AI detects no complaint (`complaintDetected: false`), our post-processing logic deterministically forces `complaintSummary = null`, eliminating hallucinated inconsistency.
+4. **Prompt Versioning & Traceability**:
+   - Prompts are treated as version-controlled software assets registered in `PromptRegistry` (e.g. `cx-feedback-analysis@v1.0.0` and `v2.0.0`).
+   - Every database record in `feedback_analyses` stores `model`, `provider`, and `prompt_version`, enabling complete auditability and lineage tracking for every customer insight.
+5. **AI Evaluation (Evals)**:
+   - Automated evaluation is the cornerstone of responsible AI engineering. We curated a 35-item Golden Evaluation Benchmark covering 11 critical archetypes: Positive, Negative, Neutral, Angry, Confused, Refund Requests, Feature Requests, Product Complaints, Service Complaints, Spam, and Ambiguous text.
+   - For every evaluation item, the system computes classification metrics (Accuracy, Precision, Recall, F1 Score) for categorical fields, Mean Absolute Error (MAE) for continuous scores (-1.0 to 1.0), and latency/cost telemetry.
+6. **Prompt & Model Regression Testing**:
+   - Using `PromptComparator`, developers can run A/B benchmark comparisons between `baseline` (e.g. Claude 3.5 Sonnet @ v1.0.0) and `candidate` (e.g. Claude 3.5 Sonnet @ v2.0.0 or GPT-4o-mini).
+   - The comparator outputs metric deltas ($\Delta \text{accuracy}$, $\Delta \text{F1}$, $\Delta \text{cost}$, $\Delta \text{latency}$) and pinpoints exact item regressions and improvements before any prompt change is shipped to production.
+7. **Batch Processing & Concurrency Throttling**:
+   - Analyzing high-volume feedback streams requires concurrency-controlled chunking (`FeedbackBatchProcessor`) to maximize throughput without exceeding upstream rate limits or starving connection pools.
+
+**Why it matters**:
+Deploying unvalidated, uncalibrated LLM pipelines into production leads to silent degradation, hallucinated data corruption, runaway API bills, and no way to verify whether a "better prompt" actually caused hidden regressions in edge cases. A strict evaluation framework transforms subjective prompt engineering into an objective, measurable science.
+
+**How to apply**:
+- Run `npx tsx scripts/run-evaluation.ts` to benchmark the feedback analysis pipeline against the golden dataset.
+- Run `npx tsx scripts/run-evaluation.ts --compare` to compare baseline and candidate prompt versions with full delta reporting.
+- Use `FeedbackAnalysisService.getInstance().analyzeFeedbackItem(item)` for single item analysis.
+- Use `FeedbackBatchProcessor` for concurrent background queue processing.
+
+**Common mistakes**:
+- Blindly trusting LLM JSON without runtime schema validation.
+- Allowing conflicting states (e.g. `complaintDetected: false` with a non-null `complaintSummary`).
+- Modifying prompts in production without running regression benchmarks against golden evaluation datasets.
+- Over-relying on LLM self-reported confidence without deterministic bounding.
+
+**Exercise**:
+Add a new feedback archetype (e.g. "Sarcastic Praise") to `GOLDEN_EVALUATION_DATASET` in `dataset.ts`, set the expected sentiment as `negative` and intent as `complaint`, run the evaluator via `npx tsx scripts/run-evaluation.ts`, and observe how prompt version v1 vs v2 handles complex sarcasm.
+
+---
+
+## 2026-10-08: Phase 12 — End-to-End Pipeline Orchestration & Real-Time Intelligence Dashboard
+
+**What I learned**:
+1. **Pipeline Orchestrator Pattern**:
+   - Building a robust, multi-tenant SaaS requires orchestrating complex, asynchronous sequences (Auth $\to$ Company Resolution $\to$ Multi-Intent Discovery $\to$ Evidence-Based Verification $\to$ Safe Scraping $\to$ DOM Extraction $\to$ Zero-PII Hashing $\to$ Two-Tier Deduplication $\to$ OmniRoute AI Analysis $\to$ Relational & Analytical Persistence).
+   - Establishing a central coordinator (`PipelineOrchestrator`) guarantees idempotency, graceful step degradation, and clear execution telemetry across all stages.
+2. **Deterministic E2E Testing without External Flakiness**:
+   - Testing multi-stage pipelines end-to-end should not depend on live network latency, unpredictable external search engines, or rate-limited third-party AI APIs.
+   - Implementing in-memory mock adapters (`MockSearchProvider`, `MockAIProvider`) that adhere to the exact same interfaces as production providers enables lightning-fast, zero-egress CI/CD testing while fully validating the data lifecycle across all 13 steps.
+3. **Zero-State Resilience in React Server Components**:
+   - Dashboards must elegantly handle fresh tenant signups before any discovery or ingestion runs have occurred.
+   - Guarding database queries against empty relations and providing intuitive zero-state UI cues (e.g. "Pending Discovery", "No Runs Yet", "Zero High-Severity Complaints Detected") ensures users are never greeted with broken layouts or blank screens.
+4. **Real-Time Analytical Aggregations vs. Mock Data**:
+   - Replacing hardcoded or simulated UI statistics with real PostgreSQL aggregations (`DashboardService`) computes true live KPIs (Sentiment Score, Ingested/Analyzed Feedback counts, Active Channels, Sentiment Breakdown, Top Topic Clusters, and Churn Risk alerts).
+   - Binding Server Components directly to database queries backed by Supabase RLS ensures multi-tenant security without leaky client-side state.
+
+**Why it matters**:
+Disjointed micro-modules are useless until they are woven into a seamless, automated user workflow. The orchestrator bridges modular engines into a fully functional product, while live database-driven dashboards deliver immediate, actionable business intelligence to users.
+
+**How to apply**:
+- Use `PipelineOrchestrator.runFullPipeline(organizationId)` to trigger full or phased end-to-end discovery, ingestion, and AI analysis.
+- Use `DashboardService.getDashboardOverview(organizationId)` to fetch consolidated analytics for server-rendered dashboards.
+- Run `npx vitest run tests/e2e/mvp-pipeline.test.ts` to verify the 13-step pipeline.
+- Run `npx tsx scripts/run-live-mvp.ts` for repeatable CLI demonstrations.
+
+**Common mistakes**:
+- Allowing external network calls or non-deterministic APIs to leak into E2E integration tests.
+- Forgetting to handle zero-state database conditions when fresh organizations first view their analytics dashboard.
+- Failing to track pipeline execution state and error boundaries across intermediate stages.
+
 ---
 
 ## Template for Future Entries

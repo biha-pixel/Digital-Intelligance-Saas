@@ -162,7 +162,7 @@ describe('Feedback Ingestion Pipeline', () => {
       organizationId: 'org-1',
       sourceId: 'src-article',
       sourceUrl: 'https://cxinsights.example.com/acme-review',
-      sourceType: 'article',
+      sourceType: 'generic_web',
       rawHtml: html,
     });
 
@@ -233,7 +233,6 @@ describe('Feedback Ingestion Pipeline', () => {
       public extract(html: string, pageUrl: string): ExtractionResult {
         return {
           sourceType: 'generic_web',
-          sourceUrl: pageUrl,
           items: [
             {
               externalId: 'custom-1',
@@ -243,6 +242,10 @@ describe('Feedback Ingestion Pipeline', () => {
               authorIdentifier: this.anonymizeAuthor('Special Tester'),
               contentHash: this.computeContentHash('Custom extracted feedback message', 'anon'),
               feedbackType: 'review',
+              languageCode: 'en',
+              sourceType: 'generic_web',
+              wordCount: 4,
+              metadata: {},
             },
           ],
           totalExtracted: 1,

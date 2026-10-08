@@ -182,8 +182,53 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 
 ---
 
-## Phase 10: AI Insights & OmniRoute Intelligent Normalization 🔲
-**Goal**: Connect the extraction pipeline to AI services to automatically structure unstructured feedback (e.g. general articles) and extract themes/sentiment.
+## Phase 10: AI Infrastructure & OmniRoute Gateway Abstraction ✅ (Completed - 2026-10-08)
+**Goal**: Build a resilient, decoupled AI infrastructure layer connecting the SaaS platform to OmniRoute with zero-trust validation, model routing, and mock capabilities.
+
+### Deliverables
+- [x] Abstract `AIProvider` contract & factory (`getAIProvider()`, `getDefaultAIProvider()`)
+- [x] Concrete `OmniRouteAdapter` connecting to OmniRoute REST chat completions endpoints
+- [x] Deterministic `MockAIProvider` for offline development and zero-egress CI workflows
+- [x] Model routing catalog with tiers (`fast`: GPT-4o Mini, `standard`: Claude 3.5 Sonnet, `reasoning`: Claude 3.7 Sonnet)
+- [x] Deterministic timeouts with `AbortController` cancellation and tier limits (15s, 30s, 60s)
+- [x] Resilience engineering: Exponential backoff with randomized jitter and retryable error classification
+- [x] Zero-trust structured output extraction with runtime Zod schema validation (`generateStructured`)
+- [x] Automatic markdown code fence sanitization (`cleanJsonText`)
+- [x] Semantic prompt versioning (`PromptTemplate`, `PromptRegistry`) with variable interpolation
+- [x] Token usage, latency, and estimated USD cost telemetry
+- [x] Comprehensive test suite (16 tests) covering valid, malformed, missing field, enum mismatch, timeout, gateway failure, and retry behaviors
+
+---
+
+## Phase 11: Feedback Analysis Engine & AI Evaluation Framework ✅ (Completed - 2026-10-08)
+**Goal**: Implement AI-driven sentiment analysis, emotion classification, intent identification, severity assessment, complaint detection, actionable recommendation synthesis, and an automated evaluation & regression framework.
+
+### Deliverables
+- [x] Strongly-typed Zod analytical schema (`FeedbackAnalysisSchema`) validating sentiment, emotion, intent, severity, topics, complaints, and calibrated confidence
+- [x] Versioned prompt templates registered in `PromptRegistry` (`cx-feedback-analysis@v1.0.0` and `v2.0.0`)
+- [x] Multi-stage `FeedbackAnalysisService` with deterministic pre-checks, structured generation, invariant defense, and Supabase persistence
+- [x] High-throughput `FeedbackBatchProcessor` with concurrency throttling and error aggregation
+- [x] 35-item Golden Evaluation Benchmark covering all 11 customer feedback archetypes (positive, negative, neutral, angry, confused, refund, feature request, product complaint, service complaint, spam, ambiguous)
+- [x] Automated evaluation runner (`EvaluationRunner`) computing classification metrics (Accuracy, Precision, Recall, F1 Score), continuous MAE, and cost/latency telemetry
+- [x] Prompt regression comparison engine (`PromptComparator`) and CLI runner (`scripts/run-evaluation.ts`) with `--compare` support
+- [x] Comprehensive test suites in `tests/analysis/feedback-analysis.test.ts` and `tests/analysis/evaluation.test.ts`
+
+---
+
+## Phase 12: End-to-End Pipeline Orchestration & Real-Time Intelligence Dashboard ✅ (Completed - 2026-10-08)
+**Goal**: Connect all prior modular engines into a unified 13-step automated MVP pipeline and wire the dashboard to real database analytics.
+
+### Deliverables
+- [x] Unified `PipelineOrchestrator` securely connecting multi-tenant phases (Auth -> Discovery -> Verification -> Scraping -> Ingestion -> AI Analysis).
+- [x] Resilient zero-state dashboard and server components handling fresh signups before execution.
+- [x] Real-data analytics queries in `DashboardService` tracking sentiment, active sources, severity alerts, and AI extraction statistics.
+- [x] Interactive UI triggers for demonstrating the complete MVP flow.
+- [x] Deterministic E2E test sequence (`mvp-pipeline.test.ts`) validating 13 execution steps safely over mock endpoints avoiding rate limits.
+- [x] Live interactive CLI runner script (`scripts/run-live-mvp.ts`) enabling repeatable testing.
+
+---
+
+## Phase 13: Mobile Companion App (Expo / React Native) 🔲
 **Goal**: Build companion mobile app with Expo/React Native.
 
 ### Deliverables
@@ -200,8 +245,9 @@ Customer Experience Intelligence SaaS — development phases and milestones.
 - Push notifications
 - Mobile-specific UX patterns
 
+
 ### Prerequisites
-- Phase 6 complete
+- Phase 10 & 11 complete
 - App store accounts
 
 ---

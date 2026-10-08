@@ -1,10 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { VerificationResult } from "./types";
 
 /**
  * Service for managing the Source Registry and verification records in Supabase.
  */
 export class RegistryService {
+  constructor(private supabaseClient?: SupabaseClient) {}
+
+  private async getClient() {
+    if (this.supabaseClient) return this.supabaseClient;
+    try {
+      return await createClient();
+    } catch {
+      return createAdminClient();
+    }
+  }
+
   /**
    * Registers a verified source in the registry.
    * Handles canonicalization, deduplication checks, and persistence.
@@ -14,7 +27,7 @@ export class RegistryService {
     companyProfileId: string,
     verification: VerificationResult
   ) {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
 
     // 1. Check for existing source (deduplication)
     const { data: existing } = await supabase
@@ -74,7 +87,7 @@ export class RegistryService {
    * Retrieves sources for a company profile with filtering.
    */
   async getSources(orgId: string, companyProfileId: string) {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
 
     const { data, error } = await supabase
       .from("sources")
@@ -94,7 +107,7 @@ export class RegistryService {
    * Gets a specific source by ID.
    */
   async getSourceById(orgId: string, sourceId: string) {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
 
     const { data, error } = await supabase
       .from("sources")
@@ -114,7 +127,7 @@ export class RegistryService {
    * Deletes a source from the registry.
    */
   async deleteSource(orgId: string, sourceId: string) {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
 
     const { error } = await supabase
       .from("sources")
@@ -139,7 +152,7 @@ export class RegistryService {
     notes?: string,
     verifiedByUserId?: string
   ) {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
 
     const { error: updateError } = await supabase
       .from("sources")
