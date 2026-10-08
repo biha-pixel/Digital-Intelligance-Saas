@@ -1,6 +1,8 @@
 /**
  * CXPulse SaaS Database Type Definitions
- * Generated and aligned with 20261007000000_core_foundation_schema.sql
+ * Generated and aligned with:
+ * - 20261007000000_core_foundation_schema.sql
+ * - 20261007000001_phase3_core_schema.sql
  */
 
 export type Json =
@@ -72,6 +74,32 @@ export type LanguageQualityEnum =
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          email: string;
+          full_name: string | null;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       organizations: {
         Row: {
           id: string;
@@ -103,7 +131,6 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
       };
       organization_members: {
         Row: {
@@ -112,7 +139,6 @@ export interface Database {
           user_id: string;
           role: UserRole;
           created_at: string;
-          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -120,7 +146,6 @@ export interface Database {
           user_id: string;
           role?: UserRole;
           created_at?: string;
-          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -128,29 +153,19 @@ export interface Database {
           user_id?: string;
           role?: UserRole;
           created_at?: string;
-          updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
       };
       company_profiles: {
         Row: {
           id: string;
           organization_id: string;
           company_name: string;
-          display_name: string;
-          primary_domain: string;
+          display_name: string | null;
+          primary_domain: string | null;
           country: string | null;
           locations: Json;
           industry: string | null;
-          aliases: string[];
+          aliases: Json;
           social_handles: Json;
           completeness_score: number;
           created_at: string;
@@ -160,12 +175,12 @@ export interface Database {
           id?: string;
           organization_id: string;
           company_name: string;
-          display_name: string;
-          primary_domain: string;
+          display_name?: string | null;
+          primary_domain?: string | null;
           country?: string | null;
           locations?: Json;
           industry?: string | null;
-          aliases?: string[];
+          aliases?: Json;
           social_handles?: Json;
           completeness_score?: number;
           created_at?: string;
@@ -175,32 +190,151 @@ export interface Database {
           id?: string;
           organization_id?: string;
           company_name?: string;
-          display_name?: string;
-          primary_domain?: string;
+          display_name?: string | null;
+          primary_domain?: string | null;
           country?: string | null;
           locations?: Json;
           industry?: string | null;
-          aliases?: string[];
+          aliases?: Json;
           social_handles?: Json;
           completeness_score?: number;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "company_profiles_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
+      };
+      company_aliases: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_profile_id: string;
+          alias_name: string;
+          is_primary_brand: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_profile_id: string;
+          alias_name: string;
+          is_primary_brand?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_profile_id?: string;
+          alias_name?: string;
+          is_primary_brand?: boolean;
+          created_at?: string;
+        };
+      };
+      company_domains: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_profile_id: string;
+          domain: string;
+          is_primary: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_profile_id: string;
+          domain: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_profile_id?: string;
+          domain?: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+      };
+      company_locations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_profile_id: string;
+          location_name: string;
+          address: string | null;
+          city: string | null;
+          state_region: string | null;
+          country: string | null;
+          postal_code: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_profile_id: string;
+          location_name: string;
+          address?: string | null;
+          city?: string | null;
+          state_region?: string | null;
+          country?: string | null;
+          postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_profile_id?: string;
+          location_name?: string;
+          address?: string | null;
+          city?: string | null;
+          state_region?: string | null;
+          country?: string | null;
+          postal_code?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      company_social_accounts: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_profile_id: string;
+          platform: string;
+          handle: string;
+          profile_url: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_profile_id: string;
+          platform: string;
+          handle: string;
+          profile_url: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_profile_id?: string;
+          platform?: string;
+          handle?: string;
+          profile_url?: string;
+          created_at?: string;
+        };
       };
       sources: {
         Row: {
           id: string;
           organization_id: string;
-          company_profile_id: string | null;
+          company_profile_id: string;
           url: string;
           source_type: SourceType;
           ownership: SourceOwnership;
@@ -215,7 +349,7 @@ export interface Database {
         Insert: {
           id?: string;
           organization_id: string;
-          company_profile_id?: string | null;
+          company_profile_id: string;
           url: string;
           source_type: SourceType;
           ownership?: SourceOwnership;
@@ -230,7 +364,7 @@ export interface Database {
         Update: {
           id?: string;
           organization_id?: string;
-          company_profile_id?: string | null;
+          company_profile_id?: string;
           url?: string;
           source_type?: SourceType;
           ownership?: SourceOwnership;
@@ -242,22 +376,76 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "sources_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "sources_company_profile_id_fkey";
-            columns: ["company_profile_id"];
-            isOneToOne: false;
-            referencedRelation: "company_profiles";
-            referencedColumns: ["id"];
-          }
-        ];
+      };
+      source_discoveries: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_profile_id: string;
+          discovered_url: string;
+          source_type: SourceType;
+          confidence_score: number;
+          discovery_method: string;
+          status: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_profile_id: string;
+          discovered_url: string;
+          source_type: SourceType;
+          confidence_score?: number;
+          discovery_method: string;
+          status?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_profile_id?: string;
+          discovered_url?: string;
+          source_type?: SourceType;
+          confidence_score?: number;
+          discovery_method?: string;
+          status?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+      };
+      source_verifications: {
+        Row: {
+          id: string;
+          organization_id: string;
+          source_id: string;
+          status: VerificationStatus;
+          verification_method: string;
+          verified_by_user_id: string | null;
+          notes: string | null;
+          verified_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          source_id: string;
+          status: VerificationStatus;
+          verification_method: string;
+          verified_by_user_id?: string | null;
+          notes?: string | null;
+          verified_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          source_id?: string;
+          status?: VerificationStatus;
+          verification_method?: string;
+          verified_by_user_id?: string | null;
+          notes?: string | null;
+          verified_at?: string;
+        };
       };
       monitoring_targets: {
         Row: {
@@ -299,22 +487,6 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "monitoring_targets_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "monitoring_targets_source_id_fkey";
-            columns: ["source_id"];
-            isOneToOne: false;
-            referencedRelation: "sources";
-            referencedColumns: ["id"];
-          }
-        ];
       };
       ingestion_runs: {
         Row: {
@@ -368,22 +540,6 @@ export interface Database {
           started_at?: string;
           completed_at?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: "ingestion_runs_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "ingestion_runs_source_id_fkey";
-            columns: ["source_id"];
-            isOneToOne: false;
-            referencedRelation: "sources";
-            referencedColumns: ["id"];
-          }
-        ];
       };
       raw_scrapes: {
         Row: {
@@ -422,22 +578,6 @@ export interface Database {
           metadata?: Json;
           fetched_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "raw_scrapes_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "raw_scrapes_source_id_fkey";
-            columns: ["source_id"];
-            isOneToOne: false;
-            referencedRelation: "sources";
-            referencedColumns: ["id"];
-          }
-        ];
       };
       feedback_items: {
         Row: {
@@ -506,22 +646,94 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "feedback_items_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "feedback_items_source_id_fkey";
-            columns: ["source_id"];
-            isOneToOne: false;
-            referencedRelation: "sources";
-            referencedColumns: ["id"];
-          }
-        ];
+      };
+      feedback_analyses: {
+        Row: {
+          id: string;
+          organization_id: string;
+          feedback_item_id: string;
+          model_name: string;
+          prompt_tokens: number;
+          completion_tokens: number;
+          cost_usd: number;
+          sentiment_breakdown: Json;
+          extracted_topics: Json;
+          customer_pain_points: Json;
+          churn_risk_score: number | null;
+          suggested_action: string | null;
+          raw_response: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          feedback_item_id: string;
+          model_name: string;
+          prompt_tokens?: number;
+          completion_tokens?: number;
+          cost_usd?: number;
+          sentiment_breakdown?: Json;
+          extracted_topics?: Json;
+          customer_pain_points?: Json;
+          churn_risk_score?: number | null;
+          suggested_action?: string | null;
+          raw_response?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          feedback_item_id?: string;
+          model_name?: string;
+          prompt_tokens?: number;
+          completion_tokens?: number;
+          cost_usd?: number;
+          sentiment_breakdown?: Json;
+          extracted_topics?: Json;
+          customer_pain_points?: Json;
+          churn_risk_score?: number | null;
+          suggested_action?: string | null;
+          raw_response?: Json | null;
+          created_at?: string;
+        };
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          actor_user_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          changes: Json;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          actor_user_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          changes?: Json;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          actor_user_id?: string | null;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          changes?: Json;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
       };
       job_queue: {
         Row: {
@@ -569,19 +781,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "job_queue_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          }
-        ];
       };
-    };
-    Views: {
-      [_ in never]: never;
     };
     Functions: {
       get_user_org_ids: {
@@ -593,7 +793,10 @@ export interface Database {
         Returns: boolean;
       };
       claim_next_job: {
-        Args: { p_worker_id: string; p_lock_duration_seconds?: number };
+        Args: {
+          p_worker_id: string;
+          p_lock_duration_seconds?: number;
+        };
         Returns: {
           id: string;
           organization_id: string;
@@ -603,20 +806,6 @@ export interface Database {
           max_attempts: number;
         }[];
       };
-    };
-    Enums: {
-      user_role: UserRole;
-      plan_tier: PlanTier;
-      source_type: SourceType;
-      source_status: SourceStatus;
-      source_ownership: SourceOwnership;
-      verification_status: VerificationStatus;
-      monitoring_status: MonitoringStatus;
-      ingestion_status: IngestionStatus;
-      job_status: JobStatus;
-      sentiment_enum: SentimentEnum;
-      intent_enum: IntentEnum;
-      language_quality_enum: LanguageQualityEnum;
     };
   };
 }

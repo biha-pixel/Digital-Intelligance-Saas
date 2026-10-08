@@ -59,6 +59,23 @@ Track what you learn during development. Each entry should explain what you lear
 
 ---
 
+## 2026-10-07: Phase 3 — Core Relational Schema, Multi-Tenant Database Architecture & RLS
+
+**What I learned**:
+1. **Relational Normalization vs. JSONB**: Relational sub-tables (e.g. `company_aliases`, `company_domains`, `company_locations`) are essential when rows require individual indexing, uniqueness constraints (e.g., `(organization_id, domain)`), or foreign key integrity, while JSONB is ideal for dynamic payload storage (e.g., AI sentiment breakdown, scrape metadata).
+2. **PostgreSQL Row Level Security (RLS)**: RLS operates at the database kernel level, modifying the execution query plan to inject security predicates (`organization_id IN (SELECT get_user_org_ids(auth.uid()))`). This guarantees strict tenant isolation even if application-level SQL queries omit a `WHERE organization_id = ...` filter.
+3. **Security Definer Function Optimization**: PostgreSQL `SECURITY DEFINER` functions (`get_user_org_ids()`) bypass RLS recursion loops during policy evaluation and execute with optimized indexed lookups on `organization_members`.
+4. **Audit Logs & Immutability**: Compliance audit logs (`audit_logs`) should be append-only with strict insert policies and restricted to tenant admins (`is_org_admin()`) for read operations.
+
+**Why it matters**: In a multi-tenant B2B SaaS, tenant data leakage is a critical vulnerability. Enforcing isolation at the database layer ensures defense-in-depth against application bugs, SQL injection flaws, and authorization bypasses.
+
+**How to apply**:
+- Enable RLS on every table immediately upon creation (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`).
+- Pair `USING` (read/update/delete filter) with `WITH CHECK` (insert/update write validation) in RLS policies.
+- Generate synchronized TypeScript types (`src/types/database.types.ts`) from schema migrations to enforce type safety in API handlers.
+
+---
+
 ## Template for Future Entries
 
 ```markdown
