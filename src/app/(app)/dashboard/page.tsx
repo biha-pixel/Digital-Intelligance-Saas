@@ -5,7 +5,6 @@ import { PipelineTriggerButton } from "@/components/dashboard/pipeline-trigger-b
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
   Database,
@@ -20,8 +19,6 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-
-export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const currentOrg = await getCurrentOrg();
@@ -67,9 +64,39 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link href="/onboarding">
+            <Badge variant="secondary" className="cursor-pointer py-1.5 px-3 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition">
+              {data.isConfigured ? "Reconfigure Profile" : "✨ Complete Setup"}
+            </Badge>
+          </Link>
           <PipelineTriggerButton />
         </div>
       </div>
+
+      {/* Onboarding Incomplete Banner */}
+      {!data.isConfigured && (
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 p-5 dark:border-indigo-900/50 dark:from-indigo-950/40 dark:via-purple-950/20 dark:to-blue-950/40 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  Welcome to CXPulse! Complete Company Setup
+                </h3>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-2xl">
+                Configure your company name, website domain, aliases, and physical locations so our multi-factor discovery engine can automatically identify verified review platforms (Trustpilot, G2, Reddit, Google Maps).
+              </p>
+            </div>
+            <Link href="/onboarding" className="shrink-0">
+              <button className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 transition">
+                <span>Start Onboarding Wizard</span>
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Discovery & Ingestion Pipeline Status Banner */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

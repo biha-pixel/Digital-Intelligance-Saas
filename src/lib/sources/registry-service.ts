@@ -86,15 +86,20 @@ export class RegistryService {
   /**
    * Retrieves sources for a company profile with filtering.
    */
-  async getSources(orgId: string, companyProfileId: string) {
+  async getSources(orgId: string, companyProfileId?: string) {
     const supabase = await this.getClient();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("sources")
       .select("*")
       .eq("organization_id", orgId)
-      .eq("company_profile_id", companyProfileId)
       .order("created_at", { ascending: false });
+
+    if (companyProfileId && companyProfileId !== "default-company-id") {
+      query = query.eq("company_profile_id", companyProfileId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Failed to get sources: ${error.message}`);

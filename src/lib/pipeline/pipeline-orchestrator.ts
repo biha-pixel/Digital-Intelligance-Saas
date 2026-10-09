@@ -164,9 +164,11 @@ export class PipelineOrchestrator {
         companyProfile = profile;
       }
 
+      const companyName = companyProfile.display_name || companyProfile.company_name || companyProfile.name;
+
       summary.companyProfileId = companyProfileId;
       recordStep("1_2_org_and_profile_resolution", "completed", step1Start, undefined, {
-        companyName: companyProfile.name,
+        companyName,
         companyProfileId,
       });
 
@@ -174,19 +176,26 @@ export class PipelineOrchestrator {
       const primaryDomain =
         companyProfile.company_domains?.find((d: any) => d.is_primary)?.domain ||
         companyProfile.company_domains?.[0]?.domain ||
+        companyProfile.primary_domain ||
         companyProfile.website_url;
 
-      const aliases = companyProfile.company_aliases?.map((a: any) => a.alias) || [];
-      const locations = companyProfile.company_locations?.map((l: any) => ({
-        city: l.city,
-        country: l.country,
-        stateRegion: l.state_region,
-        address: l.address_line1,
-      })) || [];
+      const aliases = Array.isArray(companyProfile.aliases)
+        ? companyProfile.aliases
+        : companyProfile.company_aliases?.map((a: any) => a.alias) || [];
+
+      const rawLocations = companyProfile.locations || companyProfile.company_locations || [];
+      const locations = Array.isArray(rawLocations)
+        ? rawLocations.map((l: any) => ({
+            city: l.city,
+            country: l.country,
+            stateRegion: l.stateRegion || l.state_region,
+            address: l.address || l.address_line1,
+          }))
+        : [];
 
       const vContext: VerificationContext = {
-        companyName: companyProfile.name,
-        displayName: companyProfile.name,
+        companyName,
+        displayName: companyName,
         primaryDomain,
         industry: companyProfile.industry,
         country: companyProfile.country,
@@ -202,7 +211,7 @@ export class PipelineOrchestrator {
       const discoveryResult = await discoveryService.runDiscovery(
         companyProfileId,
         {
-          companyName: companyProfile.name,
+          companyName: companyName,
           domain: primaryDomain,
           industry: companyProfile.industry,
           country: companyProfile.country,
@@ -325,26 +334,33 @@ export class PipelineOrchestrator {
       if (options.skipAnalysis) {
         recordStep("10_13_ai_analysis", "skipped", step10Start);
       } else {
-        // Query newly ingested unanalyzed items or unanalyzed items for the organization
-        let query = supabase
-          .from("feedback_items")
-          .select("*")
-          .eq("organization_id", orgId)
-          .is("sentiment_label", null)
-          .order("created_at", { ascending: false })
-          .limit(20);
-
+        // Query newly ingested unanalyzed items or any unanalyzed items for the organization
+        let rawItems: any[] = [];
         if (ingestedRunIds.length > 0) {
-          query = supabase
+          const { data: newlyIngested } = await supabase
             .from("feedback_items")
             .select("*")
-            .in("ingestion_run_id", ingestedRunIds);
+            .in("ingestion_run_id", ingestedRunIds)
+            .is("sentiment_label", null);
+          if (newlyIngested && newlyIngested.length > 0) {
+            rawItems = newlyIngested;
+          }
         }
 
-        const { data: rawItems, error: itemsErr } = await query;
+        // Fallback: If no newly ingested items (e.g. items were deduplicated in a prior run), query unanalyzed items for the org
+        if (rawItems.length === 0) {
+          const { data: unanalyzedItems, error: itemsErr } = await supabase
+            .from("feedback_items")
+            .select("*")
+            .eq("organization_id", orgId)
+            .is("sentiment_label", null)
+            .order("created_at", { ascending: false })
+            .limit(20);
 
-        if (itemsErr) {
-          throw new Error(`Failed to query unanalyzed items: ${itemsErr.message}`);
+          if (itemsErr) {
+            throw new Error(`Failed to query unanalyzed items: ${itemsErr.message}`);
+          }
+          rawItems = unanalyzedItems || [];
         }
 
         if (rawItems && rawItems.length > 0) {
@@ -353,17 +369,16 @@ export class PipelineOrchestrator {
             organization_id: r.organization_id,
             source_id: r.source_id,
             source_type: r.source_type,
-            source_url: r.source_url || "",
-            native_feedback_id: r.native_feedback_id,
-            author_identifier: r.author_hash,
+            external_id: r.external_id || r.native_feedback_id,
+            author_identifier: r.author_identifier || r.author_hash || "anon",
             author_display_name: r.author_display_name || undefined,
-            title: r.title || undefined,
             content_text: r.content_text,
             rating: r.rating ? Number(r.rating) : undefined,
-            published_at: r.published_at || undefined,
-            language: r.language || "en",
-            metadata: (r.metadata as Record<string, unknown>) || {},
-            content_hash: r.content_hash,
+            posted_at: r.posted_at || r.published_at || undefined,
+            language_code: r.language_code || r.language || "en",
+            word_count: r.word_count || (r.content_text ? r.content_text.split(/\s+/).length : 0),
+            content_hash: r.content_hash || "",
+            raw_payload: (r.raw_payload || r.metadata) as Record<string, unknown> | undefined,
           }));
 
           const batchSummary = await analysisService.analyzeBatch(normalizedItems, {
@@ -371,7 +386,7 @@ export class PipelineOrchestrator {
             timeoutMs: options.timeoutMs,
             organizationId: orgId,
             companyContext: {
-              name: companyProfile.name,
+              name: companyName,
               industry: companyProfile.industry,
               keyFeatures: companyProfile.key_features || [],
             },

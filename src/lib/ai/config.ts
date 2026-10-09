@@ -126,7 +126,7 @@ export function getOmniRouteConfig(): OmniRouteConfig {
     /\/+$/,
     ""
   );
-  const defaultModel = process.env.OMNIROUTE_DEFAULT_MODEL || "anthropic/claude-3-5-sonnet";
+  const defaultModel = process.env.OMNIROUTE_DEFAULT_MODEL || process.env.OMNIROUTE_MODEL || "anthropic/claude-3-5-sonnet";
   const fastModel = process.env.OMNIROUTE_FAST_MODEL || "openai/gpt-4o-mini";
   const reasoningModel = process.env.OMNIROUTE_REASONING_MODEL || "anthropic/claude-3-7-sonnet";
 

@@ -1,5 +1,4 @@
 import {
-  FeedbackAnalysisResult,
   FeedbackAnalysisSchema
 } from "./schemas";
 import {
@@ -10,6 +9,7 @@ import {
 } from "./types";
 import { NormalizedFeedbackItem } from "@/types/feedback.types";
 import { getAIProvider } from "@/lib/ai/provider";
+import { getOmniRouteConfig } from "@/lib/ai/config";
 import { PromptRegistry } from "@/lib/ai/prompt-versioning";
 import "./prompts";
 import { FeedbackAnalysisPromptVariables } from "./prompts";
@@ -112,7 +112,7 @@ export class FeedbackAnalysisService {
       });
 
       // 3. AI Execution via Zero-Trust Structured Output
-      const targetModel = model || template.defaultModel || "anthropic/claude-3-5-sonnet";
+      const targetModel = model || getOmniRouteConfig().defaultModel || template.defaultModel || "anthropic/claude-3-5-sonnet";
       execution.model = targetModel;
       const provider = getAIProvider(targetModel);
       execution.provider = provider.name;

@@ -1,4 +1,4 @@
-import { SourceType, OwnershipRelationship, VerificationStatus } from "@/types/database.types";
+import { SourceType, SourceOwnership, VerificationStatus } from "@/types/database.types";
 
 export interface DashboardDiscoveryMetrics {
   totalDiscovered: number;
@@ -18,7 +18,7 @@ export interface DashboardSourceMetrics {
     url: string;
     sourceType: SourceType;
     displayName: string;
-    ownership: OwnershipRelationship;
+    ownership: SourceOwnership;
     verificationStatus: VerificationStatus;
     confidenceScore: number;
   }>;
@@ -80,3 +80,36 @@ export interface DashboardOverviewData {
   severeFeedback: DashboardSevereFeedback[];
   isConfigured: boolean;
 }
+
+export interface FeedbackItemWithAnalysis {
+  id: string;
+  sourceId: string;
+  sourceType: SourceType;
+  sourceUrl: string;
+  author: string;
+  title: string | null;
+  content: string;
+  rating: number | null;
+  sentimentLabel: string | null;
+  sentimentScore: number | null;
+  topics: string[];
+  intent: string | null;
+  painPoints: string[];
+  suggestedAction: string | null;
+  churnRiskScore: number | null;
+  createdAt: string;
+  publishedAt: string | null;
+}
+
+export interface SynthesizedInsightTheme {
+  id: string;
+  title: string;
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  affectedCount: number;
+  confidence: string;
+  summary: string;
+  recommendation: string;
+  impact: string;
+}
+

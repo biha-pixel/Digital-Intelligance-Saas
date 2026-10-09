@@ -68,9 +68,9 @@ export async function registerCandidateSource(
 }
 
 /**
- * Server Action: Retrieves all registered sources for a company profile.
+ * Server Action: Retrieves all registered sources for a company profile or active organization.
  */
-export async function getRegisteredSources(companyProfileId: string) {
+export async function getRegisteredSources(companyProfileId?: string) {
   try {
     const { org } = await requireOrgAccess("viewer");
     const sources = await registryService.getSources(org.id, companyProfileId);

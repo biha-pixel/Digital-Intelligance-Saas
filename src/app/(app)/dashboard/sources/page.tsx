@@ -6,12 +6,10 @@ import {
   Search,
   ExternalLink,
   CheckCircle2,
-  AlertTriangle,
   Clock,
-  Filter,
   XCircle,
-  ShieldCheck,
-  ShieldAlert,
+  Database,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRegisteredSources } from "@/lib/actions/source-registry";
@@ -23,6 +21,7 @@ export default function SourcesPage() {
   const [sources, setSources] = useState<RegisteredSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [inspectorSource, setInspectorSource] = useState<RegisteredSource | null>(null);
 
@@ -30,14 +29,14 @@ export default function SourcesPage() {
     try {
       setLoading(true);
       setError(null);
-      // Assuming companyProfileId is available in the layout or via context in a real app
-      const res = await getRegisteredSources("default-company-id");
+      // Fetch all sources registered for the user's active organization
+      const res = await getRegisteredSources();
       if (res.success && res.data) {
         setSources(res.data);
       } else {
         setError(res.error || "Failed to load sources");
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -75,6 +74,16 @@ export default function SourcesPage() {
     }
   };
 
+  const filteredSources = sources.filter((s) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      s.displayName.toLowerCase().includes(query) ||
+      s.canonicalUrl.toLowerCase().includes(query) ||
+      s.sourceType.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -104,64 +113,98 @@ export default function SourcesPage() {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
           <input
             type="search"
-            placeholder="Filter sources by name or URL..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter sources by name, URL, or type..."
             className="h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 pl-9 pr-3 text-xs outline-none focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
           />
         </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 font-medium text-zinc-500 dark:text-zinc-400">
-            <tr>
-              <th className="p-4">Source</th>
-              <th className="p-4">Type</th>
-              <th className="p-4">Verification</th>
-              <th className="p-4">Confidence</th>
-              <th className="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {sources.map((source) => (
-              <tr key={source.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
-                <td className="p-4">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {source.displayName}
-                  </div>
-                  <a
-                    href={source.canonicalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-0.5"
-                  >
-                    {source.canonicalUrl}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </td>
-                <td className="p-4 text-zinc-600 dark:text-zinc-400">
-                  {source.sourceSubtype?.replace("_", " ")}
-                </td>
-                <td className="p-4">
-                  {getStatusBadge(source.verificationStatus)}
-                </td>
-                <td className="p-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
-                  {Math.round(source.confidence * 100)}%
-                </td>
-                <td className="p-4 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setInspectorSource(source)}
-                  >
-                    Inspect
-                  </Button>
-                </td>
+      {loading ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mx-auto mb-3" />
+          <p className="text-xs text-zinc-500">Loading registered sources...</p>
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-6 text-center dark:border-rose-900/50 dark:bg-rose-950/20">
+          <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</p>
+        </div>
+      ) : filteredSources.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 p-12 text-center bg-white dark:bg-zinc-900">
+          <Database className="h-10 w-10 text-zinc-400 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            No Sources Registered
+          </h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
+            Discover sources by running the pipeline from your dashboard or manually connect a new review channel.
+          </p>
+          <div className="mt-4">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1.5"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Connect Source</span>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-800 dark:bg-zinc-900">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 font-medium text-zinc-500 dark:text-zinc-400">
+              <tr>
+                <th className="p-4">Source</th>
+                <th className="p-4">Type</th>
+                <th className="p-4">Verification</th>
+                <th className="p-4">Confidence</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {filteredSources.map((source) => (
+                <tr key={source.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <td className="p-4">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {source.displayName}
+                    </div>
+                    <a
+                      href={source.canonicalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-0.5"
+                    >
+                      {source.canonicalUrl}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </td>
+                  <td className="p-4 text-zinc-600 dark:text-zinc-400">
+                    {source.sourceSubtype?.replace("_", " ")}
+                  </td>
+                  <td className="p-4">
+                    {getStatusBadge(source.verificationStatus)}
+                  </td>
+                  <td className="p-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                    {Math.round(source.confidence * 100)}%
+                  </td>
+                  <td className="p-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setInspectorSource(source)}
+                    >
+                      Inspect
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {isAddModalOpen && (
         <AddSourceModal
