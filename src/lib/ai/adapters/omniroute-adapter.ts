@@ -18,6 +18,7 @@ import {
   MODEL_CATALOG,
   DEFAULT_TIER_TIMEOUTS,
 } from "../config";
+import { adaptGeminiResponseToSchema } from "../../analysis/schema-adapter";
 import {
   AIError,
   AITimeoutError,
@@ -207,10 +208,10 @@ export class OmniRouteAdapter implements AIProvider {
     const modelMeta = this.getModelConfig(modelId);
     const timeoutMs = request.timeoutMs ?? DEFAULT_TIER_TIMEOUTS[modelMeta.tier] ?? this.config.defaultTimeoutMs;
 
-    // Enhance system instructions to strictly mandate JSON structured output
+    // Enhance system instructions to mandate JSON structured output
     const enhancedSystemPrompt = [
       request.systemPrompt || "You are a precise data extraction and intelligence engine.",
-      "CRITICAL: Output must be a strictly valid, parsable JSON object matching the requested schema. Do NOT include markdown commentary outside the JSON.",
+      "CRITICAL: Output MUST be valid JSON only. No markdown, no text before or after. Return a JSON object with fields: sentiment, emotion, intent, severity, topics array, complaint-related fields, and confidence scores.",
       request.schemaDescription ? `Schema Instructions: ${request.schemaDescription}` : "",
     ]
       .filter(Boolean)
@@ -313,8 +314,27 @@ export class OmniRouteAdapter implements AIProvider {
             );
           }
 
-          // Authoritative runtime Zod schema validation
-          const validationResult = request.schema.safeParse(parsedPayload);
+          // Try direct validation first (Claude, standard format)
+          let validationResult = request.schema.safeParse(parsedPayload);
+
+          // If validation fails and this is a Gemini response, attempt adaptation
+          if (!validationResult.success && request.schemaName === "FeedbackAnalysisSchema") {
+            const payload = parsedPayload as Record<string, unknown>;
+            const hasGeminiSignature =
+              payload.sentiment && (payload.status || payload.insights || payload.analysis_target);
+
+            if (hasGeminiSignature) {
+              try {
+                // Attempt Gemini-to-schema adaptation
+                const adaptedPayload = adaptGeminiResponseToSchema(payload);
+                validationResult = { success: true, data: adaptedPayload as T };
+              } catch (adaptError) {
+                // Adaptation failed, fall through to original error
+              }
+            }
+          }
+
+          // Throw if validation still fails
           if (!validationResult.success) {
             throw new AIValidationError(
               `Model output violated the specified schema (${request.schemaName || "UnnamedSchema"})`,

@@ -114,7 +114,7 @@ export class FeedbackAnalysisService {
       // 3. AI Execution via Zero-Trust Structured Output
       const targetModel = model || getOmniRouteConfig().defaultModel || template.defaultModel || "anthropic/claude-3-5-sonnet";
       execution.model = targetModel;
-      const provider = getAIProvider(targetModel);
+      const provider = getAIProvider();
       execution.provider = provider.name;
 
       const response = await provider.generateStructured({

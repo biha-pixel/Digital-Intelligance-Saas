@@ -10,13 +10,14 @@ import { Crawl4AIProvider } from "./crawl4ai-client";
 import { MockScrapingProvider } from "./mock-provider";
 
 export interface ScrapingProviderOptions {
-  providerType?: "crawl4ai" | "mock";
+  providerType?: "crawl4ai" | "mock" | "resilient";
   baseUrl?: string;
   apiToken?: string;
 }
 
-let defaultProviderInstance: ScrapingProvider | null = null;
+let crawl4aiInstance: ScrapingProvider | null = null;
 let mockProviderInstance: ScrapingProvider | null = null;
+let resilientInstance: ScrapingProvider | null = null;
 
 /**
  * Resilient Provider Wrapper:
@@ -101,27 +102,40 @@ class ResilientScrapingProvider implements ScrapingProvider {
 export function getScrapingProvider(
   options?: ScrapingProviderOptions
 ): ScrapingProvider {
-  const useMock =
-    options?.providerType === "mock" || process.env.USE_MOCK_SCRAPER === "true";
+  const providerType =
+    options?.providerType ||
+    process.env.SCRAPING_PROVIDER ||
+    (process.env.NODE_ENV === "test" ? "mock" : "crawl4ai");
 
-  if (useMock) {
+  if (providerType === "mock") {
     if (!mockProviderInstance) {
       mockProviderInstance = new MockScrapingProvider();
     }
     return mockProviderInstance;
   }
 
-  if (!defaultProviderInstance) {
-    defaultProviderInstance = new ResilientScrapingProvider(options);
+  if (providerType === "resilient") {
+    if (!resilientInstance) {
+      resilientInstance = new ResilientScrapingProvider(options);
+    }
+    return resilientInstance;
   }
 
-  return defaultProviderInstance;
+  // Active default is strict Crawl4AI provider — fail fast on container errors
+  if (!crawl4aiInstance) {
+    crawl4aiInstance = new Crawl4AIProvider({
+      baseUrl: options?.baseUrl,
+      apiToken: options?.apiToken,
+    });
+  }
+  return crawl4aiInstance;
 }
 
 /**
  * Resets the cached provider instance (useful for test isolation).
  */
 export function resetScrapingProvider(): void {
-  defaultProviderInstance = null;
+  crawl4aiInstance = null;
+  resilientInstance = null;
   mockProviderInstance = null;
 }

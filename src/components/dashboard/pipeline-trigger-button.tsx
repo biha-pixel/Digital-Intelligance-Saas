@@ -21,7 +21,9 @@ export function PipelineTriggerButton() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          providerType: "mock",
+          searchProviderType: "mock",
+          scrapingProviderType: "crawl4ai",
+          aiProviderType: "omniroute",
           sourceLimit: 3,
         }),
       });

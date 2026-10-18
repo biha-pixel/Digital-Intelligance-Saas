@@ -64,7 +64,7 @@ describe.skipIf(!shouldRunLiveTests)(
           ],
           schema: FeedbackAnalysisSchema,
           schemaName: "FeedbackAnalysisSchema",
-          modelTier: "standard",
+          model: "gemini-3.1-pro", // Explicitly use Gemini model
           timeoutMs: 30000,
         });
 
@@ -207,7 +207,7 @@ describe.skipIf(!shouldRunLiveTests)(
           ],
           schema: FeedbackAnalysisSchema,
           schemaName: "FeedbackAnalysisSchema",
-          modelTier: "standard",
+          model: "gemini-3.1-pro", // Explicitly use Gemini model
           timeoutMs: 30000,
         });
 

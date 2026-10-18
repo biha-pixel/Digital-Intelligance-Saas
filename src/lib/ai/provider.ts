@@ -31,10 +31,11 @@ export function getAIProvider(options: ProviderFactoryOptions | string = {}): AI
     return new MockAIProvider();
   }
 
-  return new OmniRouteAdapter({
-    apiKey: opts.apiKey,
-    baseUrl: opts.baseUrl,
-  });
+  const adapterConfig: any = {};
+  if (opts.apiKey !== undefined) adapterConfig.apiKey = opts.apiKey;
+  if (opts.baseUrl !== undefined) adapterConfig.baseUrl = opts.baseUrl;
+
+  return new OmniRouteAdapter(adapterConfig);
 }
 
 /**

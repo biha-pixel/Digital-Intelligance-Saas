@@ -1,0 +1,9 @@
+{
+  "hooks": [
+    {
+      "on": "Stop",
+      "matcher": "",
+      "command": "node .claude/hooks/verify-completion.js"
+    }
+  ]
+}

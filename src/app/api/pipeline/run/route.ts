@@ -3,6 +3,7 @@ import { requireOrgAccess } from "@/lib/auth/session";
 import { PipelineOrchestrator } from "@/lib/pipeline/pipeline-orchestrator";
 import { SerperSearchProvider } from "@/lib/discovery/providers/serper";
 import { MockSearchProvider } from "@/lib/discovery/providers/mock";
+import { getScrapingProvider } from "@/lib/scraping/provider";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,19 +12,29 @@ export async function POST(req: NextRequest) {
 
     const {
       companyProfileId,
-      providerType = process.env.SEARCH_PROVIDER || "mock",
+      searchProviderType = process.env.SEARCH_PROVIDER || "mock",
+      scrapingProviderType = process.env.SCRAPING_PROVIDER || "crawl4ai",
+      aiProviderType = "omniroute",
       sourceLimit = 5,
       skipCrawl = false,
       skipAnalysis = false,
       model,
     } = body;
 
+    // Use legacy `providerType` param as a fallback for search if `searchProviderType` is default "mock"
+    // (Helps avoid breaking older frontend clients during migration)
+    const activeSearchProviderType = body.providerType && (body.providerType === "serper" || body.providerType === "mock")
+      ? body.providerType
+      : searchProviderType;
+
     const searchProvider =
-      providerType === "serper"
+      activeSearchProviderType === "serper"
         ? new SerperSearchProvider()
         : new MockSearchProvider();
 
-    const orchestrator = new PipelineOrchestrator({ searchProvider });
+    const scrapingProvider = getScrapingProvider({ providerType: scrapingProviderType });
+
+    const orchestrator = new PipelineOrchestrator({ searchProvider, scrapingProvider });
 
     const summary = await orchestrator.runFullPipeline(org.id, {
       companyProfileId,

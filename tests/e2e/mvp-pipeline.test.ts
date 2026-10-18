@@ -48,6 +48,8 @@ describe("Phase 12: End-to-End MVP Intelligence Pipeline & Real-Time Dashboard",
         {
           id: "prof-acme-100",
           organization_id: "org-acme-100",
+          company_name: "Acme Cloud",
+          display_name: "Acme Cloud",
           name: "Acme Cloud",
           legal_name: "Acme Cloud Technologies Inc.",
           website_url: "https://acmecloud.example.com",
